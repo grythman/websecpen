@@ -1,0 +1,17 @@
+/* src/components/ThemeToggle.css */
+:root {
+  --bg-color: #fff;
+  --text-color: #000;
+}
+.dark-mode {
+  --bg-color: #222;
+  --text-color: #fff;
+}
+body {
+  background: var(--bg-color);
+  color: var(--text-color);
+}
+button {
+  padding: 10px;
+  cursor: pointer;
+} 
