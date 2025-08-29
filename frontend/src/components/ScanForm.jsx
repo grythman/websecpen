@@ -1,21 +1,23 @@
-// src/components/ScanForm.jsx
+// src/components/ScanForm.jsx - Enhanced with Error Handling & Session Management
 import { useState, useContext } from 'react';
 import { ThemeContext } from '../ThemeContext.jsx';
+import { useError } from '../context/ErrorContext.jsx';
+import apiService from '../utils/api.js';
 import './ScanForm.css';
 
 const ScanForm = () => {
-  const [url, setUrl] = useState('');
-  const [scanType, setScanType] = useState('');
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const { theme } = useContext(ThemeContext);
+  const { showError, showSuccess, loading, setLoadingState } = useError();
+  const [url, setUrl] = useState('');
+  const [scanType, setScanType] = useState('XSS');
+  const [scanId, setScanId] = useState(null);
 
   const scanTypes = [
     { value: 'XSS', label: 'Cross-Site Scripting (XSS)', description: 'Detects XSS vulnerabilities' },
     { value: 'SQLi', label: 'SQL Injection (SQLi)', description: 'Identifies SQL injection flaws' },
     { value: 'CSRF', label: 'Cross-Site Request Forgery (CSRF)', description: 'Checks for CSRF vulnerabilities' },
-    { value: 'Directory', label: 'Directory Traversal', description: 'Scans for directory traversal issues' }
+    { value: 'Directory', label: 'Directory Traversal', description: 'Scans for directory traversal issues' },
+    { value: 'comprehensive', label: 'Comprehensive Scan', description: 'Runs all vulnerability checks' }
   ];
 
   const validateUrl = (url) => {
@@ -25,76 +27,70 @@ const ScanForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
-    setSuccess('');
 
-    // Validation
+    // Client-side validation
     if (!url.trim()) {
-      setError('Please enter a target URL');
+      showError('Please enter a target URL');
       return;
     }
 
-    if (!validateUrl(url)) {
-      setError('Please enter a valid URL (e.g., https://example.com)');
+    if (!validateUrl(url.trim())) {
+      showError('Please enter a valid URL (e.g., https://example.com)');
       return;
     }
 
     if (!scanType) {
-      setError('Please select a scan type');
+      showError('Please select a scan type');
       return;
     }
 
-    setIsLoading(true);
+    setLoadingState(true);
 
     try {
-      // Call backend API
-      const response = await fetch('http://localhost:5000/scan/start', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          url: url.trim(),
-          scan_type: scanType
-        }),
+      // Call backend API through our centralized service
+      const data = await apiService.startScan({
+        url: url.trim(),
+        scan_type: scanType
       });
 
-      const data = await response.json();
-
-      if (response.ok) {
-        setSuccess(`Scan started successfully! Scan ID: ${data.scan_id}`);
-        setUrl('');
-        setScanType('');
-      } else {
-        setError(data.error || 'Failed to start scan');
-      }
-    } catch (err) {
-      console.error('Scan error:', err);
-      setError('Network error. Please check if the backend is running.');
+      setScanId(data.scan_id);
+      showSuccess(`🚀 Scan started successfully! Scan ID: ${data.scan_id} - Monitor progress in the dashboard.`);
+      
+      // Reset form after successful submission
+      setUrl('');
+      setScanType('XSS');
+    } catch (error) {
+      showError(error.message || 'Failed to start scan');
     } finally {
-      setIsLoading(false);
+      setLoadingState(false);
     }
   };
 
   return (
     <div className={`scan-form ${theme}`}>
-      <form onSubmit={handleSubmit} className="form">
+      <div className="form-header">
+        <h2>🔍 Security Scan</h2>
+        <p>Start a comprehensive security assessment of your web application</p>
+      </div>
+
+      <form onSubmit={handleSubmit} className="scan-form-container">
         <div className="form-group">
           <label htmlFor="url" className="form-label">
             Target URL *
           </label>
           <input
+            type="url"
             id="url"
-            type="text"
             value={url}
             onChange={(e) => setUrl(e.target.value)}
             placeholder="https://example.com"
             className="form-input"
-            disabled={isLoading}
+            disabled={loading}
+            required
           />
-          <small className="form-hint">
-            Enter the complete URL including protocol (http:// or https://)
-          </small>
+          <div className="form-hint">
+            Enter the full URL including protocol (http:// or https://)
+          </div>
         </div>
 
         <div className="form-group">
@@ -106,53 +102,60 @@ const ScanForm = () => {
             value={scanType}
             onChange={(e) => setScanType(e.target.value)}
             className="form-select"
-            disabled={isLoading}
+            disabled={loading}
+            required
           >
-            <option value="">Select a scan type</option>
+            <option value="">Select scan type...</option>
             {scanTypes.map((type) => (
               <option key={type.value} value={type.value}>
                 {type.label}
               </option>
             ))}
           </select>
-          {scanType && (
-            <small className="form-hint">
-              {scanTypes.find(t => t.value === scanType)?.description}
-            </small>
-          )}
+          <div className="form-hint">
+            {scanTypes.find(t => t.value === scanType)?.description || 'Choose the type of security scan to perform'}
+          </div>
         </div>
 
-        {error && (
-          <div className="alert alert-error">
-            <span className="alert-icon">⚠️</span>
-            {error}
+        <div className="form-actions">
+          <button 
+            type="submit" 
+            className={`btn btn-primary ${loading ? 'loading' : ''}`}
+            disabled={loading}
+          >
+            {loading ? (
+              <>
+                <span className="loading-spinner"></span>
+                Starting Scan...
+              </>
+            ) : (
+              <>
+                <span className="btn-icon">🚀</span>
+                Start Security Scan
+              </>
+            )}
+          </button>
+        </div>
+
+        {scanId && (
+          <div className="scan-info">
+            <div className="info-card">
+              <h4>✅ Scan Initiated</h4>
+              <p><strong>Scan ID:</strong> {scanId}</p>
+              <p><strong>Target:</strong> {url}</p>
+              <p><strong>Type:</strong> {scanTypes.find(t => t.value === scanType)?.label}</p>
+              <div className="info-actions">
+                <button 
+                  type="button" 
+                  className="btn btn-secondary"
+                  onClick={() => window.location.reload()}
+                >
+                  View Progress
+                </button>
+              </div>
+            </div>
           </div>
         )}
-
-        {success && (
-          <div className="alert alert-success">
-            <span className="alert-icon">✅</span>
-            {success}
-          </div>
-        )}
-
-        <button
-          type="submit"
-          className="submit-button"
-          disabled={isLoading}
-        >
-          {isLoading ? (
-            <>
-              <span className="loading-spinner"></span>
-              Starting Scan...
-            </>
-          ) : (
-            <>
-              <span className="button-icon">🔍</span>
-              Start Security Scan
-            </>
-          )}
-        </button>
       </form>
     </div>
   );
