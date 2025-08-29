@@ -1,17 +1,34 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_jwt_identity
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+from flask_compress import Compress
 from datetime import datetime, timedelta
 import re
 import random
 import os
 
+# Monitoring and error tracking
+import sentry_sdk
+from sentry_sdk.integrations.flask import FlaskIntegration
+
 # Import our models, scanner, and NLP service
-from models import db, User, Scan, Vulnerability, init_db, create_sample_data
+from models import db, User, Scan, Vulnerability, Feedback, init_db, create_sample_data
 from scanner import scan_manager
 from nlp_service import analyze_scan_results
 
 app = Flask(__name__)
+
+# Initialize Sentry for error monitoring
+sentry_dsn = os.getenv('SENTRY_DSN')
+if sentry_dsn:
+    sentry_sdk.init(
+        dsn=sentry_dsn,
+        integrations=[FlaskIntegration(transaction_style='endpoint')],
+        traces_sample_rate=1.0,
+        environment=os.getenv('FLASK_ENV', 'development')
+    )
 
 # Configuration
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///websecpen.db')
@@ -26,6 +43,12 @@ app.config['JWT_HEADER_TYPE'] = 'Bearer'
 # Initialize extensions
 CORS(app)
 jwt = JWTManager(app)
+limiter = Limiter(
+    app,
+    key_func=get_remote_address,
+    default_limits=["100 per hour"]
+)
+compress = Compress(app)
 
 # Initialize database
 init_db(app)
@@ -138,6 +161,7 @@ def get_profile():
 # Scan endpoints (updated with database integration)
 @app.route('/scan/start', methods=['POST'])
 @jwt_required()
+@limiter.limit("5 per minute")
 def start_scan():
     try:
         user_id = get_jwt_identity()
@@ -393,6 +417,145 @@ def get_nlp_analysis(scan_id):
         print(f"Error getting NLP analysis: {str(e)}")
         return jsonify({'error': 'Internal server error'}), 500
 
+# Feedback endpoints
+@app.route('/feedback', methods=['POST'])
+@jwt_required(optional=True)
+@limiter.limit("10 per hour")
+def submit_feedback():
+    """Submit user feedback (anonymous or authenticated)"""
+    try:
+        data = request.get_json()
+        
+        if not data:
+            return jsonify({'error': 'Request body required'}), 400
+        
+        feedback_text = data.get('feedback', '').strip()
+        feedback_type = data.get('type', 'general').strip()
+        
+        if not feedback_text:
+            return jsonify({'error': 'Feedback text is required'}), 400
+        
+        if len(feedback_text) > 5000:
+            return jsonify({'error': 'Feedback too long (max 5000 characters)'}), 400
+        
+        # Validate feedback type
+        valid_types = ['general', 'bug', 'feature', 'security', 'performance']
+        if feedback_type not in valid_types:
+            feedback_type = 'general'
+        
+        user_id = get_jwt_identity()
+        
+        feedback = Feedback(
+            user_id=user_id,
+            feedback=feedback_text,
+            type=feedback_type,
+            priority='medium',
+            status='new'
+        )
+        
+        db.session.add(feedback)
+        db.session.commit()
+        
+        # Log feedback submission for monitoring
+        print(f"Feedback submitted: ID {feedback.id}, Type: {feedback_type}, User: {user_id or 'Anonymous'}")
+        
+        return jsonify({
+            'message': 'Feedback submitted successfully',
+            'feedback_id': feedback.id
+        }), 201
+        
+    except Exception as e:
+        print(f"Error submitting feedback: {str(e)}")
+        return jsonify({'error': 'Failed to submit feedback'}), 500
+
+@app.route('/feedback', methods=['GET'])
+@jwt_required()
+def get_feedback():
+    """Get feedback submissions (admin only)"""
+    try:
+        user_id = get_jwt_identity()
+        user = User.query.get(user_id)
+        
+        if not user or not user.is_admin:
+            return jsonify({'error': 'Admin access required'}), 403
+        
+        # Get feedback with pagination
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 20, type=int)
+        status_filter = request.args.get('status', 'all')
+        type_filter = request.args.get('type', 'all')
+        
+        query = Feedback.query
+        
+        if status_filter != 'all':
+            query = query.filter(Feedback.status == status_filter)
+        
+        if type_filter != 'all':
+            query = query.filter(Feedback.type == type_filter)
+        
+        feedback_items = query.order_by(Feedback.created_at.desc()).paginate(
+            page=page, per_page=per_page, error_out=False
+        )
+        
+        return jsonify({
+            'feedback': [item.to_dict() for item in feedback_items.items],
+            'total': feedback_items.total,
+            'pages': feedback_items.pages,
+            'current_page': page,
+            'per_page': per_page
+        }), 200
+        
+    except Exception as e:
+        print(f"Error getting feedback: {str(e)}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+@app.route('/scan/progress/<scan_id>', methods=['GET'])
+@jwt_required()
+@limiter.limit("30 per minute")
+def scan_progress(scan_id):
+    """Get real-time scan progress"""
+    try:
+        user_id = get_jwt_identity()
+        scan = Scan.query.filter_by(id=scan_id, user_id=user_id).first()
+        
+        if not scan:
+            return jsonify({'error': 'Scan not found'}), 404
+        
+        # Calculate progress based on scan status and time elapsed
+        progress_data = {
+            'scan_id': scan.id,
+            'status': scan.status,
+            'progress_percentage': 0,
+            'estimated_time_remaining': None,
+            'pages_scanned': scan.pages_scanned or 0,
+            'requests_made': scan.requests_made or 0,
+            'vulnerabilities_found': scan.vulnerabilities_count or 0,
+            'started_at': scan.started_at.isoformat() if scan.started_at else None
+        }
+        
+        if scan.status == 'completed':
+            progress_data['progress_percentage'] = 100
+        elif scan.status == 'running':
+            # Estimate progress based on time elapsed (rough estimate)
+            if scan.started_at:
+                elapsed_minutes = (datetime.utcnow() - scan.started_at).total_seconds() / 60
+                # Assume average scan takes 5 minutes
+                estimated_progress = min(90, int(elapsed_minutes * 20))
+                progress_data['progress_percentage'] = estimated_progress
+                
+                if estimated_progress < 90:
+                    remaining_minutes = max(1, 5 - elapsed_minutes)
+                    progress_data['estimated_time_remaining'] = f"{remaining_minutes:.1f} minutes"
+        elif scan.status == 'failed':
+            progress_data['progress_percentage'] = 0
+            progress_data['error'] = 'Scan failed'
+        
+        return jsonify(progress_data), 200
+        
+    except Exception as e:
+        print(f"Error getting scan progress: {str(e)}")
+        return jsonify({'error': 'Internal server error'}), 500
+
 @app.route('/health', methods=['GET'])
 def health_check():
     """Health check endpoint"""
@@ -432,6 +595,39 @@ def invalid_token_callback(error):
 @jwt.unauthorized_loader
 def missing_token_callback(error):
     return jsonify({'error': 'Authorization token required'}), 401
+
+# Global error handlers with Sentry integration
+@app.errorhandler(Exception)
+def handle_general_exception(e):
+    """Handle all unhandled exceptions"""
+    # Send to Sentry if configured
+    if sentry_dsn:
+        sentry_sdk.capture_exception(e)
+    
+    print(f"Unhandled exception: {str(e)}")
+    return jsonify({'error': 'Internal server error'}), 500
+
+@app.errorhandler(429)
+def handle_rate_limit_exceeded(e):
+    """Handle rate limit exceeded errors"""
+    return jsonify({
+        'error': 'Rate limit exceeded',
+        'message': 'Too many requests. Please try again later.',
+        'retry_after': getattr(e, 'retry_after', 60)
+    }), 429
+
+@app.errorhandler(400)
+def handle_bad_request(e):
+    """Handle bad request errors"""
+    return jsonify({'error': 'Bad request', 'message': str(e)}), 400
+
+@app.errorhandler(500)
+def handle_internal_error(e):
+    """Handle internal server errors"""
+    if sentry_dsn:
+        sentry_sdk.capture_exception(e)
+    
+    return jsonify({'error': 'Internal server error'}), 500
 
 if __name__ == '__main__':
     with app.app_context():

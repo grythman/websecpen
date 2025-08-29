@@ -222,6 +222,39 @@ class Vulnerability(db.Model):
     def __repr__(self):
         return f'<Vulnerability {self.name} ({self.risk_level})>'
 
+class Feedback(db.Model):
+    """Feedback model for user suggestions and bug reports"""
+    __tablename__ = 'feedback'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    feedback = db.Column(db.Text, nullable=False)
+    type = db.Column(db.String(50), default='general')  # general, bug, feature
+    priority = db.Column(db.String(20), default='medium')  # low, medium, high
+    status = db.Column(db.String(20), default='new')  # new, reviewed, resolved
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    user = db.relationship('User', backref='feedback_submissions')
+    
+    def to_dict(self):
+        """Convert feedback object to dictionary"""
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'feedback': self.feedback,
+            'type': self.type,
+            'priority': self.priority,
+            'status': self.status,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
+            'user_email': self.user.email if self.user else 'Anonymous'
+        }
+    
+    def __repr__(self):
+        return f'<Feedback {self.id} ({self.type})>'
+
 # Database initialization functions
 def init_db(app):
     """Initialize database with app context"""

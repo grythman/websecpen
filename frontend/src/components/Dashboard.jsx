@@ -1,14 +1,16 @@
 // src/components/Dashboard.jsx
-import React, { useContext } from 'react';
+import React, { useContext, useState } from 'react';
 import { ThemeContext } from '../ThemeContext.jsx';
 import Logo from './Logo.jsx';
 import ScanForm from './ScanForm.jsx';
 import ScanHistory from './ScanHistory.jsx';
 import ResultPreview from './ResultPreview.jsx';
+import FeedbackForm from './FeedbackForm.jsx';
 import './Dashboard.css';
 
 const Dashboard = ({ onLogout }) => {
   const { theme, toggleTheme } = useContext(ThemeContext);
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
 
   const handleLogout = () => {
     localStorage.removeItem('isAuthenticated');
@@ -31,6 +33,13 @@ const Dashboard = ({ onLogout }) => {
           <button className="nav-item active">Dashboard</button>
           <button className="nav-item">Scan History</button>
           <button className="nav-item">Reports</button>
+          <button 
+            className="nav-item"
+            onClick={() => setShowFeedbackModal(true)}
+            title="Send Feedback"
+          >
+            💬 Feedback
+          </button>
           <button className="theme-toggle" onClick={toggleTheme}>
             {theme === 'light' ? '🌙' : '☀️'}
           </button>
@@ -110,6 +119,14 @@ const Dashboard = ({ onLogout }) => {
           </section>
         </div>
       </main>
+      
+      {/* Feedback Modal */}
+      {showFeedbackModal && (
+        <FeedbackForm 
+          isModal={true} 
+          onClose={() => setShowFeedbackModal(false)} 
+        />
+      )}
     </div>
   );
 };
