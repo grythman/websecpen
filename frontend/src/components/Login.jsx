@@ -1,6 +1,7 @@
 // src/components/Login.jsx
 import { useState, useContext } from 'react';
 import { ThemeContext } from '../ThemeContext.jsx';
+import Logo from './Logo.jsx';
 import './Login.css';
 
 const Login = ({ onLogin }) => {
@@ -63,7 +64,10 @@ const Login = ({ onLogin }) => {
   return (
     <div className={`login-container ${theme}`}>
       <div className="login-card">
-        <h2>WebSecPen Login</h2>
+        <div className="login-header">
+          <Logo size="large" showText={true} />
+          <p>Sign in to your security scanning dashboard</p>
+        </div>
         <form onSubmit={handleSubmit} className="login-form">
           <div className="form-group">
             <input

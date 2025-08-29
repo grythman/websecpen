@@ -1,6 +1,7 @@
 // src/components/Dashboard.jsx
 import React, { useContext } from 'react';
 import { ThemeContext } from '../ThemeContext.jsx';
+import Logo from './Logo.jsx';
 import ScanForm from './ScanForm.jsx';
 import ScanHistory from './ScanHistory.jsx';
 import ResultPreview from './ResultPreview.jsx';
@@ -24,7 +25,7 @@ const Dashboard = ({ onLogout }) => {
       {/* Navigation Bar */}
       <nav className="dashboard-nav">
         <div className="nav-brand">
-          <h1>WebSecPen</h1>
+          <Logo size="medium" showText={true} />
         </div>
         <div className="nav-menu">
           <button className="nav-item active">Dashboard</button>

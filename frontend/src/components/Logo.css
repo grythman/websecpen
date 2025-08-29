@@ -1,0 +1,115 @@
+/* src/components/Logo.css - Professional Logo Styling */
+
+.logo-container {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.logo-svg {
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.logo-svg:hover {
+  transform: scale(1.05);
+}
+
+/* Pulse animation for scan center */
+.scan-pulse {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 0.8;
+    r: 2;
+  }
+  50% {
+    opacity: 1;
+    r: 2.5;
+  }
+  100% {
+    opacity: 0.8;
+    r: 2;
+  }
+}
+
+/* Scanner beam animation */
+.logo-svg:hover .scanner-beam {
+  animation: scanBeam 1.5s ease-in-out;
+}
+
+@keyframes scanBeam {
+  0% {
+    stroke-dasharray: 0, 100;
+    stroke-dashoffset: 0;
+  }
+  50% {
+    stroke-dasharray: 50, 50;
+    stroke-dashoffset: -25;
+  }
+  100% {
+    stroke-dasharray: 0, 100;
+    stroke-dashoffset: -100;
+  }
+}
+
+/* Responsive logo sizing */
+@media (max-width: 768px) {
+  .logo-container.medium {
+    transform: scale(0.8);
+  }
+  
+  .logo-container.large {
+    transform: scale(0.9);
+  }
+}
+
+@media (max-width: 480px) {
+  .logo-container.medium {
+    transform: scale(0.7);
+  }
+  
+  .logo-container.large {
+    transform: scale(0.75);
+  }
+  
+  .logo-container.small {
+    transform: scale(0.9);
+  }
+}
+
+/* Theme transitions */
+.logo-container.light {
+  filter: none;
+}
+
+.logo-container.dark {
+  filter: brightness(1.1) contrast(1.05);
+}
+
+/* Accessibility improvements */
+.logo-svg {
+  max-width: 100%;
+  height: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scan-pulse,
+  .logo-svg:hover .scanner-beam {
+    animation: none;
+  }
+  
+  .logo-svg:hover {
+    transform: none;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .logo-svg {
+    filter: contrast(1.5);
+  }
+} 
