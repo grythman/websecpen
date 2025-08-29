@@ -6,9 +6,10 @@ import re
 import random
 import os
 
-# Import our models and scanner
+# Import our models, scanner, and NLP service
 from models import db, User, Scan, Vulnerability, init_db, create_sample_data
 from scanner import scan_manager
+from nlp_service import analyze_scan_results
 
 app = Flask(__name__)
 
@@ -202,6 +203,14 @@ def start_scan():
                     # Store raw results
                     current_scan.results = results
                     
+                    # Generate NLP analysis of vulnerabilities
+                    nlp_analysis = analyze_scan_results(vulns)
+                    current_scan.nlp_summary = nlp_analysis.get('summary', 'Analysis not available')
+                    
+                    # Store additional NLP insights in results
+                    results['nlp_analysis'] = nlp_analysis
+                    current_scan.results = results
+                    
                     # Create individual vulnerability records
                     for vuln_data in vulns:
                         vulnerability = Vulnerability(
@@ -349,6 +358,39 @@ def get_all_scans():
         
     except Exception as e:
         print(f"Error getting scans: {str(e)}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+@app.route('/scan/analyze/<scan_id>', methods=['GET'])
+@jwt_required()
+def get_nlp_analysis(scan_id):
+    """Get detailed NLP analysis for a specific scan"""
+    try:
+        user_id = get_jwt_identity()
+        scan = Scan.query.filter_by(id=scan_id, user_id=user_id).first()
+        
+        if not scan:
+            return jsonify({'error': 'Scan not found'}), 404
+        
+        if scan.status != 'completed':
+            return jsonify({'error': 'Scan not completed yet'}), 400
+        
+        # Get vulnerabilities for analysis
+        vulnerabilities = []
+        for vuln in scan.vulnerabilities:
+            vulnerabilities.append(vuln.to_dict())
+        
+        # Generate fresh NLP analysis
+        nlp_analysis = analyze_scan_results(vulnerabilities)
+        
+        return jsonify({
+            'scan_id': scan.id,
+            'target_url': scan.target_url,
+            'vulnerability_count': len(vulnerabilities),
+            'nlp_analysis': nlp_analysis
+        }), 200
+        
+    except Exception as e:
+        print(f"Error getting NLP analysis: {str(e)}")
         return jsonify({'error': 'Internal server error'}), 500
 
 @app.route('/health', methods=['GET'])
