@@ -1,68 +1,196 @@
+/* Global CSS Variables and Base Styles */
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  /* Typography */
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
   line-height: 1.5;
   font-weight: 400;
-
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  /* Light Theme Colors */
+  --primary-color: #667eea;
+  --primary-hover: #5a6fd8;
+  
+  /* Backgrounds */
+  --bg-color: #ffffff;
+  --section-bg: #ffffff;
+  --nav-bg: #ffffff;
+  --header-bg: #f7fafc;
+  --input-bg: #ffffff;
+  --button-bg: #edf2f7;
+  --hover-bg: #edf2f7;
+  --disabled-bg: #f7fafc;
+  --table-bg: #ffffff;
+  --overview-bg: #f8fafc;
+  --vuln-bg: #ffffff;
+  --stat-bg: #f7fafc;
+  --secondary-bg: #f7fafc;
+  --confidence-bg: #e2e8f0;
+  --code-bg: #f1f5f9;
+  --row-hover-bg: #f7fafc;
+  
+  /* Text Colors */
+  --text-color: #2d3748;
+  --text-muted: #718096;
+  --code-color: #475569;
+  
+  /* Border Colors */
+  --border-color: #e2e8f0;
+  
+  /* Dark Theme Colors */
+  --bg-color-dark: #1a202c;
+  --section-bg-dark: #2d3748;
+  --nav-bg-dark: #2d3748;
+  --header-bg-dark: #1a202c;
+  --input-bg-dark: #2d3748;
+  --button-bg-dark: #4a5568;
+  --hover-bg-dark: #4a5568;
+  --disabled-bg-dark: #1a202c;
+  --table-bg-dark: #2d3748;
+  --overview-bg-dark: #1a202c;
+  --vuln-bg-dark: #2d3748;
+  --stat-bg-dark: #1a202c;
+  --secondary-bg-dark: #2d3748;
+  --confidence-bg-dark: #4a5568;
+  --code-bg-dark: #1a202c;
+  --row-hover-bg-dark: #1a202c;
+  
+  /* Dark Text Colors */
+  --text-color-dark: #f7fafc;
+  --text-muted-dark: #a0aec0;
+  --code-color-dark: #cbd5e0;
+  
+  /* Dark Border Colors */
+  --border-color-dark: #4a5568;
 }
 
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
+/* Global Reset and Base Styles */
+* {
+  box-sizing: border-box;
 }
-a:hover {
-  color: #535bf2;
+
+html {
+  font-size: 16px;
 }
 
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
+  padding: 0;
   min-height: 100vh;
+  background: var(--bg-color);
+  color: var(--text-color);
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+#root {
+  min-height: 100vh;
+  width: 100%;
+}
+
+.app {
+  min-height: 100vh;
+  width: 100%;
+}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+  margin: 0;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+p {
+  margin: 0;
+  line-height: 1.6;
+}
+
+/* Links */
+a {
+  color: var(--primary-color);
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+a:hover {
+  color: var(--primary-hover);
+}
+
+/* Form Elements */
+input, select, textarea, button {
+  font-family: inherit;
+  font-size: inherit;
 }
 
 button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
   cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
+/* Focus Styles */
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-color);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* Utility Classes */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Animation Classes */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { 
+    opacity: 0;
+    transform: translateY(20px);
   }
-  a:hover {
-    color: #747bff;
+  to { 
+    opacity: 1;
+    transform: translateY(0);
   }
-  button {
-    background-color: #f9f9f9;
-  }
+}
+
+.fade-in {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.slide-up {
+  animation: slideUp 0.3s ease-out;
 }

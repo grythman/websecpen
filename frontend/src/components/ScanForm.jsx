@@ -1,41 +1,160 @@
 // src/components/ScanForm.jsx
-import { useState } from 'react';
+import { useState, useContext } from 'react';
+import { ThemeContext } from '../ThemeContext.jsx';
+import './ScanForm.css';
 
 const ScanForm = () => {
   const [url, setUrl] = useState('');
   const [scanType, setScanType] = useState('');
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const { theme } = useContext(ThemeContext);
 
-  const handleSubmit = (e) => {
+  const scanTypes = [
+    { value: 'XSS', label: 'Cross-Site Scripting (XSS)', description: 'Detects XSS vulnerabilities' },
+    { value: 'SQLi', label: 'SQL Injection (SQLi)', description: 'Identifies SQL injection flaws' },
+    { value: 'CSRF', label: 'Cross-Site Request Forgery (CSRF)', description: 'Checks for CSRF vulnerabilities' },
+    { value: 'Directory', label: 'Directory Traversal', description: 'Scans for directory traversal issues' }
+  ];
+
+  const validateUrl = (url) => {
+    const urlRegex = /^https?:\/\/(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b(?:[-a-zA-Z0-9()@:%_\+.~#?&=]*)$/;
+    return urlRegex.test(url);
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!url || !scanType) {
-      setError('Please provide URL and scan type');
+    setError('');
+    setSuccess('');
+
+    // Validation
+    if (!url.trim()) {
+      setError('Please enter a target URL');
       return;
     }
-    if (!/^https?:\/\/.+/.test(url)) {
-      setError('Invalid URL format');
+
+    if (!validateUrl(url)) {
+      setError('Please enter a valid URL (e.g., https://example.com)');
       return;
     }
-    // API call placeholder
-    console.log('Scan:', { url, scanType });
+
+    if (!scanType) {
+      setError('Please select a scan type');
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      // Call backend API
+      const response = await fetch('http://localhost:5000/scan/start', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          url: url.trim(),
+          scan_type: scanType
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setSuccess(`Scan started successfully! Scan ID: ${data.scan_id}`);
+        setUrl('');
+        setScanType('');
+      } else {
+        setError(data.error || 'Failed to start scan');
+      }
+    } catch (err) {
+      console.error('Scan error:', err);
+      setError('Network error. Please check if the backend is running.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
-    <form onSubmit={handleSubmit}>
-      <input
-        type="text"
-        value={url}
-        onChange={(e) => setUrl(e.target.value)}
-        placeholder="Target URL"
-      />
-      <select value={scanType} onChange={(e) => setScanType(e.target.value)}>
-        <option value="">Select Scan Type</option>
-        <option value="SQLi">SQLi</option>
-        <option value="XSS">XSS</option>
-      </select>
-      {error && <p>{error}</p>}
-      <button type="submit">Start Scan</button>
-    </form>
+    <div className={`scan-form ${theme}`}>
+      <form onSubmit={handleSubmit} className="form">
+        <div className="form-group">
+          <label htmlFor="url" className="form-label">
+            Target URL *
+          </label>
+          <input
+            id="url"
+            type="text"
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            placeholder="https://example.com"
+            className="form-input"
+            disabled={isLoading}
+          />
+          <small className="form-hint">
+            Enter the complete URL including protocol (http:// or https://)
+          </small>
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="scanType" className="form-label">
+            Scan Type *
+          </label>
+          <select
+            id="scanType"
+            value={scanType}
+            onChange={(e) => setScanType(e.target.value)}
+            className="form-select"
+            disabled={isLoading}
+          >
+            <option value="">Select a scan type</option>
+            {scanTypes.map((type) => (
+              <option key={type.value} value={type.value}>
+                {type.label}
+              </option>
+            ))}
+          </select>
+          {scanType && (
+            <small className="form-hint">
+              {scanTypes.find(t => t.value === scanType)?.description}
+            </small>
+          )}
+        </div>
+
+        {error && (
+          <div className="alert alert-error">
+            <span className="alert-icon">⚠️</span>
+            {error}
+          </div>
+        )}
+
+        {success && (
+          <div className="alert alert-success">
+            <span className="alert-icon">✅</span>
+            {success}
+          </div>
+        )}
+
+        <button
+          type="submit"
+          className="submit-button"
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <>
+              <span className="loading-spinner"></span>
+              Starting Scan...
+            </>
+          ) : (
+            <>
+              <span className="button-icon">🔍</span>
+              Start Security Scan
+            </>
+          )}
+        </button>
+      </form>
+    </div>
   );
 };
 
