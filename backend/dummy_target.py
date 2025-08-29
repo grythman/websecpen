@@ -141,7 +141,7 @@ def directory_test():
             <input type="text" name="file" value="{filename}">
             <button type="submit">Read File</button>
         </form>
-        <p>Try: ../../../etc/passwd (on Linux) or ..\..\..\windows\system32\drivers\etc\hosts</p>
+        <p>Try: ../../../etc/passwd (on Linux) or ..\\..\\..\\windows\\system32\\drivers\\etc\\hosts</p>
         '''
     except Exception as e:
         return f'''
