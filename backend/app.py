@@ -6,8 +6,9 @@ import re
 import random
 import os
 
-# Import our models
+# Import our models and scanner
 from models import db, User, Scan, Vulnerability, init_db, create_sample_data
+from scanner import scan_manager
 
 app = Flask(__name__)
 
@@ -16,6 +17,10 @@ app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///web
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', 'your-secret-key-change-in-production')
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=24)
+app.config['JWT_CSRF_PROTECT'] = False  # Disable CSRF for API usage
+app.config['JWT_TOKEN_LOCATION'] = ['headers']
+app.config['JWT_HEADER_NAME'] = 'Authorization'
+app.config['JWT_HEADER_TYPE'] = 'Bearer'
 
 # Initialize extensions
 CORS(app)
@@ -169,11 +174,67 @@ def start_scan():
         db.session.add(scan)
         db.session.commit()
         
-        # TODO: Integrate with OWASP ZAP (Task 16)
-        # For now, update status to running
+        # Integrate with our security scanner (Task 16 complete!)
+        def progress_callback(scan_id, results):
+            """Update scan progress in database"""
+            current_scan = Scan.query.get(scan_id)
+            if current_scan:
+                current_scan.status = results.get('status', 'running')
+                current_scan.pages_scanned = results.get('pages_scanned', 0)
+                current_scan.requests_made = results.get('requests_made', 0)
+                
+                if results.get('status') == 'completed':
+                    current_scan.completed_at = datetime.utcnow()
+                    current_scan.duration_seconds = int(results.get('duration', 0))
+                    
+                    # Process vulnerabilities
+                    vulns = results.get('vulnerabilities', [])
+                    current_scan.vulnerabilities_count = len(vulns)
+                    
+                    # Count by severity
+                    current_scan.high_severity_count = len([v for v in vulns if v.get('severity') == 'High'])
+                    current_scan.medium_severity_count = len([v for v in vulns if v.get('severity') == 'Medium'])
+                    current_scan.low_severity_count = len([v for v in vulns if v.get('severity') == 'Low'])
+                    
+                    # Calculate risk score
+                    current_scan.calculate_risk_score()
+                    
+                    # Store raw results
+                    current_scan.results = results
+                    
+                    # Create individual vulnerability records
+                    for vuln_data in vulns:
+                        vulnerability = Vulnerability(
+                            scan_id=scan_id,
+                            name=vuln_data.get('title', 'Unknown'),
+                            description=vuln_data.get('description', ''),
+                            risk_level=vuln_data.get('severity', 'Low'),
+                            confidence=str(vuln_data.get('confidence', 0)),
+                            url=vuln_data.get('url', ''),
+                            parameter=vuln_data.get('parameter', ''),
+                            method=vuln_data.get('method', 'GET'),
+                            attack=vuln_data.get('payload', ''),
+                            evidence=vuln_data.get('evidence', ''),
+                            solution=vuln_data.get('solution', '')
+                        )
+                        db.session.add(vulnerability)
+                
+                elif results.get('status') == 'failed':
+                    current_scan.error_message = results.get('error', 'Scan failed')
+                
+                # Update progress percentage
+                if results.get('requests_made', 0) > 0:
+                    current_scan.progress_percentage = min(100, (results.get('requests_made', 0) * 10))
+                
+                db.session.commit()
+        
+        # Start the actual security scan
         scan.status = 'running'
         scan.started_at = datetime.utcnow()
         db.session.commit()
+        
+        # Start scan in background
+        scan_manager.start_scan(scan.id, url, scan_type, progress_callback)
         
         print(f"Starting {scan_type} scan for {url} with ID {scan.id}")
         
