@@ -165,17 +165,17 @@ def get_profile():
 def start_scan():
     try:
         user_id = get_jwt_identity()
-        data = request.get_json()
+    data = request.get_json()
         
         if not data:
             return jsonify({'error': 'No JSON data provided'}), 400
             
-        url = data.get('url')
-        scan_type = data.get('scan_type')
+    url = data.get('url')
+    scan_type = data.get('scan_type')
 
         # Validation
-        if not url or not scan_type:
-            return jsonify({'error': 'Missing url or scan_type'}), 400
+    if not url or not scan_type:
+        return jsonify({'error': 'Missing url or scan_type'}), 400
             
         # URL validation
         url_pattern = r'^https?:\/\/(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b(?:[-a-zA-Z0-9()@:%_\+.~#?&=]*)$'

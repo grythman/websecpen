@@ -152,8 +152,8 @@ const ScanHistory = () => {
       {/* Scan History Table */}
       <div className="table-container">
         <table className="history-table">
-          <thead>
-            <tr>
+        <thead>
+          <tr>
               <th onClick={() => handleSort('id')} className="sortable">
                 ID {getSortIcon('id')}
               </th>
@@ -176,9 +176,9 @@ const ScanHistory = () => {
                 Severity {getSortIcon('severity')}
               </th>
               <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
+          </tr>
+        </thead>
+        <tbody>
             {filteredAndSortedScans.map(scan => (
               <tr key={scan.id} className="scan-row">
                 <td className="scan-id">#{scan.id}</td>
@@ -222,10 +222,10 @@ const ScanHistory = () => {
                     ⬇️ Report
                   </button>
                 </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+            </tr>
+          ))}
+        </tbody>
+      </table>
 
         {filteredAndSortedScans.length === 0 && (
           <div className="no-results">

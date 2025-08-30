@@ -15,7 +15,7 @@ const mockResult = {
     {
       id: 1,
       type: 'XSS',
-      severity: 'High',
+  severity: 'High',
       title: 'Stored Cross-Site Scripting in Contact Form',
       description: 'User input is not properly sanitized before being stored and displayed.',
       location: '/contact.php',

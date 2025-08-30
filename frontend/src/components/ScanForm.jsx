@@ -78,11 +78,11 @@ const ScanForm = () => {
           <label htmlFor="url" className="form-label">
             Target URL *
           </label>
-          <input
+      <input
             type="url"
             id="url"
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
+        value={url}
+        onChange={(e) => setUrl(e.target.value)}
             placeholder="https://example.com"
             className="form-input"
             disabled={loading}
@@ -111,7 +111,7 @@ const ScanForm = () => {
                 {type.label}
               </option>
             ))}
-          </select>
+      </select>
           <div className="form-hint">
             {scanTypes.find(t => t.value === scanType)?.description || 'Choose the type of security scan to perform'}
           </div>
@@ -156,7 +156,7 @@ const ScanForm = () => {
             </div>
           </div>
         )}
-      </form>
+    </form>
     </div>
   );
 };

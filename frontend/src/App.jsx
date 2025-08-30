@@ -45,7 +45,7 @@ function App() {
           ) : (
             <Dashboard onLogout={handleLogout} />
           )}
-        </div>
+      </div>
       </ErrorProvider>
     </ThemeProvider>
   );

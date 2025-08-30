@@ -70,22 +70,22 @@ const Login = ({ onLogin }) => {
         </div>
         <form onSubmit={handleSubmit} className="login-form">
           <div className="form-group">
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Email"
+        <input
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="Email"
               className="form-input"
               disabled={isLoading}
-            />
+        />
           </div>
           
           <div className="form-group">
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Password"
+        <input
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="Password"
               className="form-input"
               disabled={isLoading}
             />
@@ -104,7 +104,7 @@ const Login = ({ onLogin }) => {
           <div className="login-footer">
             <a href="#" className="forgot-password">Forgot Password?</a>
           </div>
-        </form>
+      </form>
       </div>
     </div>
   );
