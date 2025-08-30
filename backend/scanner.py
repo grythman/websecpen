@@ -22,22 +22,39 @@ class SecurityScanner:
         })
         self.vulnerabilities = []
         
-    def scan_target(self, target_url, scan_type, callback=None):
+    def scan_target(self, target_url, scan_type, config=None, callback=None):
         """
-        Main scanning function that coordinates different scan types
+        Main scanning function that coordinates different scan types with advanced configuration
         """
-        print(f"Starting {scan_type} scan for {target_url}")
+        config = config or {}
+        max_depth = config.get('max_depth', 3)
+        include_sql = config.get('include_sql', True)
+        include_xss = config.get('include_xss', True)
+        include_csrf = config.get('include_csrf', True)
+        include_directory = config.get('include_directory', True)
+        custom_headers = config.get('custom_headers', {})
+        scan_delay = config.get('scan_delay', 1)  # Delay between requests in seconds
+        aggressive_mode = config.get('aggressive_mode', False)
+        
+        print(f"Starting {scan_type} scan for {target_url} with config: {config}")
+        
+        # Apply custom headers if provided
+        if custom_headers:
+            self.session.headers.update(custom_headers)
         
         try:
             # Initialize scan results
             results = {
                 'target_url': target_url,
                 'scan_type': scan_type,
+                'scan_config': config,
                 'start_time': datetime.utcnow(),
                 'status': 'running',
                 'vulnerabilities': [],
                 'pages_scanned': 0,
-                'requests_made': 0
+                'requests_made': 0,
+                'max_depth': max_depth,
+                'current_depth': 0
             }
             
             if callback:
@@ -343,8 +360,8 @@ class ScanManager:
     def __init__(self):
         self.active_scans = {}
         
-    def start_scan(self, scan_id, target_url, scan_type, progress_callback=None):
-        """Start a new scan in a separate thread"""
+    def start_scan(self, scan_id, target_url, scan_type, scan_config=None, progress_callback=None):
+        """Start a new scan in a separate thread with configurable options"""
         
         def run_scan():
             scanner = SecurityScanner()
@@ -354,8 +371,8 @@ class ScanManager:
                 if progress_callback:
                     progress_callback(scan_id, results)
             
-            # Run the scan
-            final_results = scanner.scan_target(target_url, scan_type, update_progress)
+            # Run the scan with configuration
+            final_results = scanner.scan_target(target_url, scan_type, scan_config, update_progress)
             
             # Final callback
             if progress_callback:

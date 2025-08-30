@@ -165,17 +165,17 @@ def get_profile():
 def start_scan():
     try:
         user_id = get_jwt_identity()
-    data = request.get_json()
+        data = request.get_json()
         
         if not data:
             return jsonify({'error': 'No JSON data provided'}), 400
             
-    url = data.get('url')
-    scan_type = data.get('scan_type')
+        url = data.get('url')
+        scan_type = data.get('scan_type')
 
         # Validation
-    if not url or not scan_type:
-        return jsonify({'error': 'Missing url or scan_type'}), 400
+        if not url or not scan_type:
+            return jsonify({'error': 'Missing url or scan_type'}), 400
             
         # URL validation
         url_pattern = r'^https?:\/\/(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b(?:[-a-zA-Z0-9()@:%_\+.~#?&=]*)$'
@@ -187,13 +187,32 @@ def start_scan():
         if scan_type not in valid_scan_types:
             return jsonify({'error': f'Invalid scan type. Supported types: {", ".join(valid_scan_types)}'}), 400
 
+        # Extract advanced scan configuration
+        scan_config = {
+            'max_depth': data.get('max_depth', 3),
+            'include_sql': data.get('include_sql', True),
+            'include_xss': data.get('include_xss', True),
+            'include_csrf': data.get('include_csrf', True),
+            'include_directory': data.get('include_directory', True),
+            'scan_delay': data.get('scan_delay', 1),
+            'aggressive_mode': data.get('aggressive_mode', False),
+            'custom_headers': data.get('custom_headers', {})
+        }
+        
+        # Validate scan configuration
+        if scan_config['max_depth'] < 1 or scan_config['max_depth'] > 10:
+            return jsonify({'error': 'Max depth must be between 1 and 10'}), 400
+        
+        if scan_config['scan_delay'] < 0.5 or scan_config['scan_delay'] > 10:
+            return jsonify({'error': 'Scan delay must be between 0.5 and 10 seconds'}), 400
+        
         # Create new scan record
         scan = Scan(
             user_id=user_id,
             target_url=url,
             scan_type=scan_type,
             status='pending',
-            scan_config=data.get('config', {})
+            scan_config=scan_config
         )
         
         db.session.add(scan)
@@ -266,8 +285,8 @@ def start_scan():
         scan.started_at = datetime.utcnow()
         db.session.commit()
         
-        # Start scan in background
-        scan_manager.start_scan(scan.id, url, scan_type, progress_callback)
+        # Start scan in background with configuration
+        scan_manager.start_scan(scan.id, url, scan_type, scan_config, progress_callback)
         
         print(f"Starting {scan_type} scan for {url} with ID {scan.id}")
         
@@ -275,7 +294,8 @@ def start_scan():
             'scan_id': scan.id, 
             'status': scan.status,
             'message': f'{scan_type} scan initiated for {url}',
-            'estimated_duration': '2-5 minutes'
+            'estimated_duration': '2-5 minutes',
+            'scan_config': scan_config
         }), 200
         
     except Exception as e:
@@ -554,6 +574,150 @@ def scan_progress(scan_id):
         
     except Exception as e:
         print(f"Error getting scan progress: {str(e)}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+# Advanced Analytics endpoints
+@app.route('/admin/analytics', methods=['GET'])
+@jwt_required()
+def get_analytics():
+    """Get comprehensive analytics for admin dashboard"""
+    try:
+        user_id = get_jwt_identity()
+        user = User.query.get(user_id)
+        
+        if not user or not user.is_admin:
+            return jsonify({'error': 'Admin access required'}), 403
+        
+        # Get analytics data
+        from collections import Counter
+        from datetime import datetime, timedelta
+        
+        scans = Scan.query.all()
+        users = User.query.all()
+        feedback_items = Feedback.query.all()
+        
+        # User activity analysis
+        scan_count_by_user = Counter(scan.user_id for scan in scans)
+        user_activity = []
+        for user_obj in users:
+            scan_count = scan_count_by_user.get(user_obj.id, 0)
+            last_scan = Scan.query.filter_by(user_id=user_obj.id).order_by(Scan.created_at.desc()).first()
+            user_activity.append({
+                'user_id': user_obj.id,
+                'email': user_obj.email,
+                'scan_count': scan_count,
+                'last_activity': last_scan.created_at.isoformat() if last_scan else None,
+                'is_admin': user_obj.is_admin
+            })
+        
+        # Recent activity
+        recent_scans = []
+        for scan in scans[-10:]:
+            recent_scans.append({
+                'id': scan.id,
+                'target_url': scan.target_url,
+                'scan_type': scan.scan_type,
+                'status': scan.status,
+                'created_at': scan.created_at.isoformat() if scan.created_at else None,
+                'user_email': scan.user.email if scan.user else 'Unknown'
+            })
+        
+        # Scan statistics by type and status
+        scan_types = Counter(scan.scan_type for scan in scans)
+        scan_statuses = Counter(scan.status for scan in scans)
+        
+        # Vulnerability statistics
+        vulnerability_stats = {
+            'total_vulnerabilities': sum(scan.vulnerabilities_count or 0 for scan in scans),
+            'high_severity': sum(scan.high_severity_count or 0 for scan in scans),
+            'medium_severity': sum(scan.medium_severity_count or 0 for scan in scans),
+            'low_severity': sum(scan.low_severity_count or 0 for scan in scans),
+            'avg_risk_score': sum(scan.risk_score or 0 for scan in scans) / len(scans) if scans else 0
+        }
+        
+        # Feedback statistics
+        feedback_types = Counter(feedback.type for feedback in feedback_items)
+        feedback_statuses = Counter(feedback.status for feedback in feedback_items)
+        
+        # Time-based analysis (last 30 days)
+        thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+        recent_scans_count = len([s for s in scans if s.created_at and s.created_at >= thirty_days_ago])
+        recent_users_count = len(set(s.user_id for s in scans if s.created_at and s.created_at >= thirty_days_ago))
+        
+        # System health metrics
+        total_scan_time = sum(scan.duration_seconds or 0 for scan in scans if scan.duration_seconds)
+        avg_scan_duration = total_scan_time / len([s for s in scans if s.duration_seconds]) if scans else 0
+        
+        return jsonify({
+            'user_activity': user_activity,
+            'recent_scans': recent_scans,
+            'scan_statistics': {
+                'total_scans': len(scans),
+                'scan_types': dict(scan_types),
+                'scan_statuses': dict(scan_statuses),
+                'recent_scans_30d': recent_scans_count,
+                'active_users_30d': recent_users_count
+            },
+            'vulnerability_statistics': vulnerability_stats,
+            'feedback_statistics': {
+                'total_feedback': len(feedback_items),
+                'feedback_types': dict(feedback_types),
+                'feedback_statuses': dict(feedback_statuses)
+            },
+            'performance_metrics': {
+                'avg_scan_duration': round(avg_scan_duration, 2),
+                'total_scan_time': total_scan_time,
+                'total_users': len(users)
+            },
+            'generated_at': datetime.utcnow().isoformat()
+        }), 200
+        
+    except Exception as e:
+        print(f"Error getting analytics: {str(e)}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+@app.route('/admin/dashboard', methods=['GET'])
+@jwt_required()
+def admin_dashboard():
+    """Get admin dashboard summary"""
+    try:
+        user_id = get_jwt_identity()
+        user = User.query.get(user_id)
+        
+        if not user or not user.is_admin:
+            return jsonify({'error': 'Admin access required'}), 403
+        
+        # Quick stats for dashboard cards
+        total_users = User.query.count()
+        total_scans = Scan.query.count()
+        pending_scans = Scan.query.filter_by(status='pending').count()
+        running_scans = Scan.query.filter_by(status='running').count()
+        new_feedback = Feedback.query.filter_by(status='new').count()
+        
+        # Recent activity summary
+        recent_users = User.query.order_by(User.created_at.desc()).limit(5).all()
+        critical_vulnerabilities = Scan.query.filter(Scan.high_severity_count > 0).count()
+        
+        return jsonify({
+            'summary': {
+                'total_users': total_users,
+                'total_scans': total_scans,
+                'pending_scans': pending_scans,
+                'running_scans': running_scans,
+                'new_feedback': new_feedback,
+                'critical_vulnerabilities': critical_vulnerabilities
+            },
+            'recent_users': [
+                {
+                    'id': u.id,
+                    'email': u.email,
+                    'created_at': u.created_at.isoformat() if u.created_at else None
+                } for u in recent_users
+            ]
+        }), 200
+        
+    except Exception as e:
+        print(f"Error getting admin dashboard: {str(e)}")
         return jsonify({'error': 'Internal server error'}), 500
 
 @app.route('/health', methods=['GET'])

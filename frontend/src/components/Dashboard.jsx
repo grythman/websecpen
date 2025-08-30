@@ -6,6 +6,7 @@ import ScanForm from './ScanForm.jsx';
 import ScanHistory from './ScanHistory.jsx';
 import ResultPreview from './ResultPreview.jsx';
 import FeedbackForm from './FeedbackForm.jsx';
+import Onboarding from './Onboarding.jsx';
 import './Dashboard.css';
 
 const Dashboard = ({ onLogout }) => {
@@ -127,6 +128,9 @@ const Dashboard = ({ onLogout }) => {
           onClose={() => setShowFeedbackModal(false)} 
         />
       )}
+      
+      {/* User Onboarding Tour */}
+      <Onboarding />
     </div>
   );
 };
