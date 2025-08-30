@@ -52,14 +52,14 @@ class Scan(db.Model):
     """Scan model for security scan records"""
     __tablename__ = 'scans'
     
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    id = db.Column(db.Integer, primary_key=True, index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
     target_url = db.Column(db.String(500), nullable=False)
-    scan_type = db.Column(db.String(50), nullable=False)  # XSS, SQLi, CSRF, Directory
-    status = db.Column(db.String(20), default='pending')  # pending, running, completed, failed
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    scan_type = db.Column(db.String(50), nullable=False, index=True)  # XSS, SQLi, CSRF, Directory
+    status = db.Column(db.String(20), default='pending', index=True)  # pending, running, completed, failed
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
     started_at = db.Column(db.DateTime, nullable=True)
-    completed_at = db.Column(db.DateTime, nullable=True)
+    completed_at = db.Column(db.DateTime, nullable=True, index=True)
     duration_seconds = db.Column(db.Integer, nullable=True)
     
     # Scan configuration
@@ -168,14 +168,14 @@ class Vulnerability(db.Model):
     """Individual vulnerability found in scans"""
     __tablename__ = 'vulnerabilities'
     
-    id = db.Column(db.Integer, primary_key=True)
-    scan_id = db.Column(db.Integer, db.ForeignKey('scans.id'), nullable=False)
+    id = db.Column(db.Integer, primary_key=True, index=True)
+    scan_id = db.Column(db.Integer, db.ForeignKey('scans.id'), nullable=False, index=True)
     
     # Vulnerability details
     name = db.Column(db.String(255), nullable=False)
     description = db.Column(db.Text, nullable=True)
-    risk_level = db.Column(db.String(20), nullable=False)  # High, Medium, Low, Informational
-    confidence = db.Column(db.String(20), nullable=True)  # High, Medium, Low
+    risk_level = db.Column(db.String(20), nullable=False, index=True)  # High, Medium, Low, Informational
+    confidence = db.Column(db.String(20), nullable=True)
     
     # Location information
     url = db.Column(db.String(500), nullable=True)

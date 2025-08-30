@@ -14,3 +14,9 @@ boto3==1.40.21
 sentry-sdk==2.35.1
 flask-limiter==3.12
 flask-compress==1.18
+sendgrid==6.12.4
+locust==2.39.1
+redis==6.4.0
+flask-login==0.6.3
+gevent==25.5.1
+psutil==7.0.0

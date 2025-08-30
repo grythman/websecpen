@@ -41,10 +41,16 @@ class VulnerabilityNLPAnalyzer:
                 tokenizer='facebook/bart-large-cnn'
             )
             
-            # Text classification for vulnerability severity
+            # Text classification for vulnerability severity and prioritization
             self.classifier = pipeline(
                 'text-classification',
                 model='distilbert-base-uncased-finetuned-sst-2-english'
+            )
+            
+            # Enhanced classifier for security risk assessment
+            self.risk_classifier = pipeline(
+                'zero-shot-classification',
+                model='facebook/bart-large-mnli'
             )
             
             # Sentiment analysis for risk assessment
@@ -342,6 +348,26 @@ nlp_analyzer = VulnerabilityNLPAnalyzer()
 
 def analyze_scan_results(vulnerabilities: List[Dict[str, Any]]) -> Dict[str, Any]:
     """
-    Main function to analyze vulnerability scan results with NLP
+    Main function to analyze vulnerability scan results with NLP and prioritization
     """
-    return nlp_analyzer.analyze_vulnerabilities(vulnerabilities) 
+    # Get basic NLP analysis
+    analysis = nlp_analyzer.analyze_vulnerabilities(vulnerabilities)
+    
+    # Add intelligent prioritization
+    prioritized_vulns = prioritize_vulnerabilities(vulnerabilities)
+    
+    # Enhanced analysis with prioritization data
+    if prioritized_vulns:
+        analysis['prioritized_vulnerabilities'] = prioritized_vulns[:10]  # Top 10 most critical
+        analysis['total_critical'] = len([v for v in prioritized_vulns if v.get('threat_level') == 'critical'])
+        analysis['total_high'] = len([v for v in prioritized_vulns if v.get('threat_level') == 'high'])
+        analysis['avg_priority_score'] = sum(v.get('priority_score', 0) for v in prioritized_vulns) / len(prioritized_vulns)
+        analysis['highest_priority'] = prioritized_vulns[0] if prioritized_vulns else None
+    
+    return analysis
+
+def prioritize_vulnerabilities(vulnerabilities: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """
+    Intelligently prioritize vulnerabilities using NLP analysis
+    """
+    return nlp_analyzer.prioritize_vulnerabilities(vulnerabilities) 
