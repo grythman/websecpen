@@ -1,22 +1,27 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, Response
 from flask_cors import CORS
-from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_jwt_identity
+from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_jwt_identity, get_jwt
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_compress import Compress
+from flask_socketio import SocketIO
+from flask_restx import Api, Resource, fields
 from datetime import datetime, timedelta
 import re
 import random
 import os
+import uuid
 
 # Monitoring and error tracking
 import sentry_sdk
 from sentry_sdk.integrations.flask import FlaskIntegration
 
 # Import our models, scanner, and NLP service
-from models import db, User, Scan, Vulnerability, Feedback, init_db, create_sample_data
+from models import db, User, Scan, Vulnerability, Feedback, ApiKey, init_db, create_sample_data
 from scanner import scan_manager
 from nlp_service import analyze_scan_results
+from monitoring import performance_monitor, alert_manager
+from chat_service import initialize_chat_service
 
 app = Flask(__name__)
 

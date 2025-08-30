@@ -17,6 +17,9 @@ class User(db.Model):
     last_name = db.Column(db.String(80), nullable=True)
     is_active = db.Column(db.Boolean, default=True)
     is_admin = db.Column(db.Boolean, default=False)
+    role = db.Column(db.String(20), default='free', index=True)  # free, premium, admin
+    scan_limit = db.Column(db.Integer, default=5)  # Monthly scan limit
+    language_preference = db.Column(db.String(10), default='en')  # i18n support
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     last_login = db.Column(db.DateTime, nullable=True)
     
@@ -312,4 +315,54 @@ def create_sample_data():
         )
         db.session.add(sample_scan)
         db.session.commit()
-        print("Sample data created successfully") 
+        print("Sample data created successfully")
+
+class ApiKey(db.Model):
+    """API Keys for third-party integrations"""
+    __tablename__ = 'api_keys'
+    
+    id = db.Column(db.Integer, primary_key=True, index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+    key = db.Column(db.String(64), unique=True, nullable=False, index=True)
+    name = db.Column(db.String(100), nullable=False)  # Key description/name
+    is_active = db.Column(db.Boolean, default=True, index=True)
+    permissions = db.Column(db.JSON, nullable=True)  # Specific permissions
+    last_used_at = db.Column(db.DateTime, nullable=True)
+    usage_count = db.Column(db.Integer, default=0)
+    rate_limit = db.Column(db.Integer, default=1000)  # Requests per hour
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+    expires_at = db.Column(db.DateTime, nullable=True)
+    
+    # Relationship
+    user = db.relationship('User', backref='api_keys')
+    
+    def is_valid(self):
+        """Check if API key is valid and not expired"""
+        if not self.is_active:
+            return False
+        if self.expires_at and self.expires_at < datetime.utcnow():
+            return False
+        return True
+    
+    def increment_usage(self):
+        """Increment usage count and update last used timestamp"""
+        self.usage_count += 1
+        self.last_used_at = datetime.utcnow()
+        db.session.commit()
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'key': self.key[:8] + '...' + self.key[-4:],  # Masked key
+            'is_active': self.is_active,
+            'permissions': self.permissions,
+            'last_used_at': self.last_used_at.isoformat() if self.last_used_at else None,
+            'usage_count': self.usage_count,
+            'rate_limit': self.rate_limit,
+            'created_at': self.created_at.isoformat(),
+            'expires_at': self.expires_at.isoformat() if self.expires_at else None
+        }
+    
+    def __repr__(self):
+        return f'<ApiKey {self.name} for user {self.user_id}>' 
