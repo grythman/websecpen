@@ -853,6 +853,13 @@ try:
 except ImportError as e:
     print(f"Aug 24-29 features not available: {e}")
 
+# Initialize August 30 - September 3 features
+try:
+    from aug30_sep3_features import init_aug30_sep3_routes
+    init_aug30_sep3_routes(app)
+except ImportError as e:
+    print(f"Aug 30 - Sep 3 features not available: {e}")
+
 @app.route('/api/scan/report/<int:scan_id>/pdf', methods=['GET'])
 @jwt_required()
 def export_scan_pdf(scan_id):
