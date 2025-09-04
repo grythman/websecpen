@@ -846,6 +846,13 @@ try:
 except ImportError as e:
     print(f"External integrations not available: {e}")
 
+# Initialize August 24-29 features
+try:
+    from aug24_29_features import init_aug24_29_routes
+    init_aug24_29_routes(app)
+except ImportError as e:
+    print(f"Aug 24-29 features not available: {e}")
+
 @app.route('/api/scan/report/<int:scan_id>/pdf', methods=['GET'])
 @jwt_required()
 def export_scan_pdf(scan_id):
