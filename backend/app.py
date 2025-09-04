@@ -17,11 +17,16 @@ import sentry_sdk
 from sentry_sdk.integrations.flask import FlaskIntegration
 
 # Import our models, scanner, and NLP service
-from models import db, User, Scan, Vulnerability, Feedback, ApiKey, init_db, create_sample_data
+from models import db, User, Scan, Vulnerability, Feedback, ApiKey, Badge, init_db, create_sample_data
 from scanner import scan_manager
 from nlp_service import analyze_scan_results
 from monitoring import performance_monitor, alert_manager
 from chat_service import initialize_chat_service
+from premium_features import init_premium_routes
+from advanced_features import init_advanced_routes
+from new_advanced_features import init_new_advanced_routes
+from advanced_analytics import init_advanced_analytics, init_advanced_routes as init_analytics_routes
+from pdf_report import generate_pdf_report
 
 app = Flask(__name__)
 
@@ -49,10 +54,10 @@ app.config['JWT_HEADER_TYPE'] = 'Bearer'
 CORS(app)
 jwt = JWTManager(app)
 limiter = Limiter(
-    app,
     key_func=get_remote_address,
     default_limits=["100 per hour"]
 )
+limiter.init_app(app)
 compress = Compress(app)
 
 # Initialize database
@@ -784,6 +789,74 @@ def handle_rate_limit_exceeded(e):
         'message': 'Too many requests. Please try again later.',
         'retry_after': getattr(e, 'retry_after', 60)
     }), 429
+
+# Initialize premium and advanced features
+init_premium_routes(app)
+init_advanced_routes(app)
+init_new_advanced_routes(app)
+
+# Initialize advanced analytics and real-time features
+socketio = init_advanced_analytics(app)
+init_analytics_routes(app)
+
+@app.route('/api/scan/report/<int:scan_id>/pdf', methods=['GET'])
+@jwt_required()
+def export_scan_pdf(scan_id):
+    """Export scan results as PDF report"""
+    try:
+        user_id = get_jwt_identity()
+        
+        # Get scan
+        scan = Scan.query.filter_by(id=scan_id, user_id=user_id).first()
+        if not scan:
+            return jsonify({'error': 'Scan not found'}), 404
+        
+        # Get user data for report personalization
+        user = User.query.get(user_id)
+        user_data = {
+            'email': user.email,
+            'name': f"{user.first_name} {user.last_name}".strip() or user.email
+        } if user else None
+        
+        # Prepare scan data for PDF generation
+        scan_data = {
+            'target_url': scan.target_url,
+            'scan_type': scan.scan_type,
+            'scanner': 'WebSecPen',
+            'created_at': scan.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+            'duration': scan.duration_seconds,
+            'vulnerabilities_count': scan.vulnerabilities_count,
+            'high_severity_count': scan.high_severity_count,
+            'medium_severity_count': scan.medium_severity_count,
+            'low_severity_count': scan.low_severity_count,
+            'info_severity_count': scan.info_severity_count,
+            'risk_score': scan.risk_score,
+            'nlp_summary': scan.nlp_summary,
+            'vulnerabilities': scan.results or [],
+            'pages_scanned': scan.pages_scanned,
+            'requests_made': scan.requests_made,
+            'scan_config': scan.scan_config or {}
+        }
+        
+        # Generate PDF
+        pdf_bytes = generate_pdf_report(scan_data, user_data)
+        
+        # Create filename
+        filename = f"WebSecPen_Report_{scan.target_url.replace('https://', '').replace('http://', '').replace('/', '_')}_{scan.id}.pdf"
+        
+        # Return PDF response
+        return Response(
+            pdf_bytes,
+            mimetype='application/pdf',
+            headers={
+                'Content-Disposition': f'attachment; filename="{filename}"',
+                'Content-Length': len(pdf_bytes)
+            }
+        )
+        
+    except Exception as e:
+        print(f"PDF export failed: {e}")
+        return jsonify({'error': 'Failed to generate PDF report'}), 500
 
 @app.errorhandler(400)
 def handle_bad_request(e):

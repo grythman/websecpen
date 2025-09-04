@@ -1,0 +1,321 @@
+.referral-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.referral-header {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.referral-header h2 {
+  color: #2c3e50;
+  font-size: 2rem;
+  margin-bottom: 10px;
+}
+
+.referral-header p {
+  color: #7f8c8d;
+  font-size: 1.1rem;
+}
+
+.referral-stats {
+  display: flex;
+  justify-content: space-around;
+  margin-bottom: 30px;
+  background: #f8f9fa;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.stat-item {
+  text-align: center;
+  flex: 1;
+}
+
+.stat-number {
+  display: block;
+  font-size: 2rem;
+  font-weight: bold;
+  color: #3498db;
+  margin-bottom: 5px;
+}
+
+.stat-label {
+  color: #7f8c8d;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.referral-form {
+  background: white;
+  padding: 25px;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  margin-bottom: 30px;
+}
+
+.referral-form h3 {
+  color: #2c3e50;
+  margin-bottom: 20px;
+  font-size: 1.3rem;
+}
+
+.form-group {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.form-group input[type="email"] {
+  flex: 1;
+  padding: 12px 15px;
+  border: 2px solid #e0e0e0;
+  border-radius: 6px;
+  font-size: 1rem;
+  transition: border-color 0.3s ease;
+}
+
+.form-group input[type="email"]:focus {
+  outline: none;
+  border-color: #3498db;
+}
+
+.form-group button {
+  padding: 12px 20px;
+  background: #3498db;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 0.3s ease;
+  white-space: nowrap;
+}
+
+.form-group button:hover:not(:disabled) {
+  background: #2980b9;
+}
+
+.form-group button:disabled {
+  background: #bdc3c7;
+  cursor: not-allowed;
+}
+
+.message {
+  padding: 12px 15px;
+  border-radius: 6px;
+  margin-top: 15px;
+  font-weight: 500;
+}
+
+.message.success {
+  background: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.message.error {
+  background: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+.share-link {
+  margin-top: 20px;
+  padding: 20px;
+  background: #f1f8ff;
+  border-radius: 8px;
+  border: 1px solid #c8e1ff;
+}
+
+.share-link h4 {
+  color: #2c3e50;
+  margin-bottom: 15px;
+}
+
+.link-container {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.link-container input {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid #d0d7de;
+  border-radius: 6px;
+  background: white;
+  font-family: monospace;
+  font-size: 0.9rem;
+}
+
+.link-container button {
+  padding: 10px 15px;
+  background: #28a745;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.link-container button:hover {
+  background: #218838;
+}
+
+.share-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.share-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 15px;
+  text-decoration: none;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+}
+
+.share-btn.email {
+  background: #6c757d;
+  color: white;
+}
+
+.share-btn.email:hover {
+  background: #5a6268;
+}
+
+.share-btn.twitter {
+  background: #1da1f2;
+  color: white;
+}
+
+.share-btn.twitter:hover {
+  background: #0d8bd9;
+}
+
+.referral-list {
+  background: white;
+  padding: 25px;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.referral-list h3 {
+  color: #2c3e50;
+  margin-bottom: 20px;
+  font-size: 1.3rem;
+}
+
+.empty-state {
+  text-align: center;
+  color: #7f8c8d;
+  font-style: italic;
+  padding: 40px 20px;
+}
+
+.referrals-table {
+  overflow-x: auto;
+}
+
+.referrals-table table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+
+.referrals-table th,
+.referrals-table td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.referrals-table th {
+  background: #f8f9fa;
+  font-weight: 600;
+  color: #495057;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  letter-spacing: 0.5px;
+}
+
+.referrals-table td code {
+  background: #f1f3f4;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.9rem;
+}
+
+.status {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.status.pending {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.status.redeemed {
+  background: #d4edda;
+  color: #155724;
+}
+
+.reward {
+  color: #28a745;
+  font-weight: 600;
+}
+
+.no-reward {
+  color: #6c757d;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .referral-container {
+    padding: 15px;
+  }
+  
+  .referral-stats {
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .form-group {
+    flex-direction: column;
+  }
+  
+  .form-group button {
+    align-self: flex-start;
+  }
+  
+  .link-container {
+    flex-direction: column;
+  }
+  
+  .share-buttons {
+    flex-direction: column;
+  }
+  
+  .referrals-table {
+    font-size: 0.9rem;
+  }
+  
+  .referrals-table th,
+  .referrals-table td {
+    padding: 8px;
+  }
+} 

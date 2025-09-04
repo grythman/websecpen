@@ -1,4 +1,4 @@
-# scanner.py - Security Scanner Module
+# scanner.py - Security Scanner Module with OWASP ZAP Integration
 import requests
 import re
 import time
@@ -8,24 +8,167 @@ from bs4 import BeautifulSoup
 import sqlite3
 from datetime import datetime
 import threading
+import logging
+
+# Import ZAP integration
+try:
+    from zap_integration import ZAPScanner, get_zap_scanner, convert_zap_to_websecpen_format
+    ZAP_AVAILABLE = True
+except ImportError:
+    ZAP_AVAILABLE = False
+    logging.warning("ZAP integration not available, using Python scanner")
+
+logger = logging.getLogger(__name__)
 
 class SecurityScanner:
     """
-    Python-based security scanner that can detect real vulnerabilities.
-    This will be easily replaceable with OWASP ZAP integration later.
+    Hybrid security scanner that uses OWASP ZAP when available,
+    falls back to Python-based scanning when ZAP is not accessible
     """
     
-    def __init__(self):
+    def __init__(self, use_zap: bool = True):
         self.session = requests.Session()
         self.session.headers.update({
-            'User-Agent': 'WebSecPen Security Scanner 1.0'
+            'User-Agent': 'WebSecPen Security Scanner 2.0'
         })
         self.vulnerabilities = []
+        self.use_zap = use_zap and ZAP_AVAILABLE
+        self.zap_scanner = None
+        
+        # Initialize ZAP if requested and available
+        if self.use_zap:
+            try:
+                self.zap_scanner = get_zap_scanner()
+                if not self.zap_scanner.is_available():
+                    logger.warning("ZAP not available, falling back to Python scanner")
+                    self.use_zap = False
+                else:
+                    logger.info("Using OWASP ZAP for security scanning")
+            except Exception as e:
+                logger.warning(f"ZAP initialization failed: {e}, using Python scanner")
+                self.use_zap = False
+        
+        if not self.use_zap:
+            logger.info("Using Python-based security scanner")
         
     def scan_target(self, target_url, scan_type, config=None, callback=None):
         """
-        Main scanning function that coordinates different scan types with advanced configuration
+        Main scanning function that coordinates different scan types
+        Uses ZAP when available, falls back to Python scanner
         """
+        config = config or {}
+        
+        print(f"Starting {scan_type} scan for {target_url}")
+        print(f"Scanner mode: {'OWASP ZAP' if self.use_zap else 'Python Scanner'}")
+        
+        try:
+            if self.use_zap and self.zap_scanner:
+                return self._scan_with_zap(target_url, scan_type, config, callback)
+            else:
+                return self._scan_with_python(target_url, scan_type, config, callback)
+        except Exception as e:
+            logger.error(f"Scan failed: {e}")
+            # If ZAP fails, try Python scanner as fallback
+            if self.use_zap:
+                logger.info("ZAP scan failed, trying Python scanner as fallback")
+                self.use_zap = False
+                return self._scan_with_python(target_url, scan_type, config, callback)
+            else:
+                raise
+    
+    def _scan_with_zap(self, target_url, scan_type, config, callback=None):
+        """Use OWASP ZAP for scanning"""
+        try:
+            # Start ZAP session
+            session_name = f"WebSecPen_{int(time.time())}"
+            self.zap_scanner.start_session(session_name)
+            
+            # Initialize results
+            results = {
+                'target_url': target_url,
+                'scan_type': scan_type,
+                'scanner': 'OWASP ZAP',
+                'scan_config': config,
+                'start_time': datetime.utcnow(),
+                'status': 'running',
+                'vulnerabilities': [],
+                'pages_scanned': 0,
+                'requests_made': 0,
+                'progress': 0
+            }
+            
+            if callback:
+                callback(results)
+            
+            # Perform ZAP scan based on scan type
+            if scan_type in ['XSS', 'SQLi', 'CSRF', 'Directory', 'Full']:
+                # For all types, do a comprehensive ZAP scan
+                zap_results = self.zap_scanner.full_scan(target_url, 
+                    callback=lambda r: self._update_zap_progress(r, results, callback))
+                
+                # Convert ZAP results to WebSecPen format
+                if zap_results.get('alerts'):
+                    converted_vulns = convert_zap_to_websecpen_format(zap_results['alerts'])
+                    
+                    # Filter by scan type if specific type requested
+                    if scan_type != 'Full':
+                        converted_vulns = self._filter_vulnerabilities_by_type(converted_vulns, scan_type)
+                    
+                    results['vulnerabilities'] = converted_vulns
+                    results['vulnerabilities_count'] = len(converted_vulns)
+                    results['high_severity_count'] = zap_results.get('high_severity_count', 0)
+                    results['medium_severity_count'] = zap_results.get('medium_severity_count', 0)
+                    results['low_severity_count'] = zap_results.get('low_severity_count', 0)
+                    results['info_severity_count'] = zap_results.get('info_severity_count', 0)
+                
+                results['status'] = zap_results.get('status', 'completed')
+                results['zap_session'] = session_name
+                
+            # Finalize results
+            results['end_time'] = datetime.utcnow()
+            results['duration'] = (results['end_time'] - results['start_time']).total_seconds()
+            results['progress'] = 100
+            
+            if callback:
+                callback(results)
+            
+            # Cleanup
+            self.zap_scanner.cleanup_session()
+            
+            return results
+            
+        except Exception as e:
+            logger.error(f"ZAP scan error: {e}")
+            results['status'] = 'failed'
+            results['error'] = str(e)
+            if callback:
+                callback(results)
+            return results
+    
+    def _update_zap_progress(self, zap_results, websecpen_results, callback):
+        """Update WebSecPen results with ZAP progress"""
+        if 'progress' in zap_results:
+            websecpen_results['progress'] = zap_results['progress']
+            websecpen_results['status'] = zap_results.get('status', 'running')
+            
+            if callback:
+                callback(websecpen_results)
+    
+    def _filter_vulnerabilities_by_type(self, vulnerabilities, scan_type):
+        """Filter vulnerabilities by requested scan type"""
+        if scan_type == 'XSS':
+            return [v for v in vulnerabilities if 'xss' in v.get('type', '').lower() or 'cross site scripting' in v.get('type', '').lower()]
+        elif scan_type == 'SQLi':
+            return [v for v in vulnerabilities if 'sql' in v.get('type', '').lower() or 'injection' in v.get('type', '').lower()]
+        elif scan_type == 'CSRF':
+            return [v for v in vulnerabilities if 'csrf' in v.get('type', '').lower() or 'cross-site request forgery' in v.get('type', '').lower()]
+        elif scan_type == 'Directory':
+            return [v for v in vulnerabilities if 'directory' in v.get('type', '').lower() or 'path' in v.get('type', '').lower()]
+        else:
+            return vulnerabilities
+    
+    def _scan_with_python(self, target_url, scan_type, config, callback=None):
+        """Fallback Python-based scanning (original implementation)"""
         config = config or {}
         max_depth = config.get('max_depth', 3)
         include_sql = config.get('include_sql', True)
@@ -33,10 +176,8 @@ class SecurityScanner:
         include_csrf = config.get('include_csrf', True)
         include_directory = config.get('include_directory', True)
         custom_headers = config.get('custom_headers', {})
-        scan_delay = config.get('scan_delay', 1)  # Delay between requests in seconds
+        scan_delay = config.get('scan_delay', 1)
         aggressive_mode = config.get('aggressive_mode', False)
-        
-        print(f"Starting {scan_type} scan for {target_url} with config: {config}")
         
         # Apply custom headers if provided
         if custom_headers:
@@ -47,6 +188,7 @@ class SecurityScanner:
             results = {
                 'target_url': target_url,
                 'scan_type': scan_type,
+                'scanner': 'Python Scanner',
                 'scan_config': config,
                 'start_time': datetime.utcnow(),
                 'status': 'running',
@@ -54,7 +196,8 @@ class SecurityScanner:
                 'pages_scanned': 0,
                 'requests_made': 0,
                 'max_depth': max_depth,
-                'current_depth': 0
+                'current_depth': 0,
+                'progress': 0
             }
             
             if callback:
@@ -80,6 +223,7 @@ class SecurityScanner:
             results['end_time'] = datetime.utcnow()
             results['status'] = 'completed'
             results['duration'] = (results['end_time'] - results['start_time']).total_seconds()
+            results['progress'] = 100
             
             if callback:
                 callback(results)
@@ -87,7 +231,7 @@ class SecurityScanner:
             return results
             
         except Exception as e:
-            print(f"Scan error: {str(e)}")
+            print(f"Python scan error: {str(e)}")
             results['status'] = 'failed'
             results['error'] = str(e)
             if callback:

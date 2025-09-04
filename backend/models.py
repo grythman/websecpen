@@ -20,11 +20,20 @@ class User(db.Model):
     role = db.Column(db.String(20), default='free', index=True)  # free, premium, admin
     scan_limit = db.Column(db.Integer, default=5)  # Monthly scan limit
     language_preference = db.Column(db.String(10), default='en')  # i18n support
+    fcm_token = db.Column(db.String(255), nullable=True)  # Firebase Cloud Messaging token
+    
+    # Profile customization fields
+    avatar_url = db.Column(db.String(255), nullable=True)
+    preferences = db.Column(db.JSON, default=lambda: {"notifications": True, "has_seen_tutorial": False})
+    
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     last_login = db.Column(db.DateTime, nullable=True)
     
     # Relationships
     scans = db.relationship('Scan', backref='user', lazy=True, cascade='all, delete-orphan')
+    referrals_made = db.relationship('Referral', foreign_keys='Referral.referrer_id', backref='referrer', lazy=True)
+    audit_logs = db.relationship('AuditLog', backref='admin', lazy=True)
+    schedules = db.relationship('Schedule', backref='user', lazy=True, cascade='all, delete-orphan')
     
     def set_password(self, password):
         """Hash and set password"""
@@ -41,12 +50,16 @@ class User(db.Model):
             'email': self.email,
             'first_name': self.first_name,
             'last_name': self.last_name,
-            'is_active': self.is_active,
             'is_admin': self.is_admin,
+            'role': self.role,
+            'scan_limit': self.scan_limit,
+            'language_preference': self.language_preference,
+            'avatar_url': self.avatar_url,
+            'preferences': self.preferences or {},
             'created_at': self.created_at.isoformat() if self.created_at else None,
-            'last_login': self.last_login.isoformat() if self.last_login else None,
-            'total_scans': len(self.scans)
+            'last_login': self.last_login.isoformat() if self.last_login else None
         }
+
     
     def __repr__(self):
         return f'<User {self.email}>'
@@ -57,13 +70,16 @@ class Scan(db.Model):
     
     id = db.Column(db.Integer, primary_key=True, index=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
-    target_url = db.Column(db.String(500), nullable=False)
+    target_url = db.Column(db.String(500), nullable=False, index=True)
     scan_type = db.Column(db.String(50), nullable=False, index=True)  # XSS, SQLi, CSRF, Directory
     status = db.Column(db.String(20), default='pending', index=True)  # pending, running, completed, failed
     created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
     started_at = db.Column(db.DateTime, nullable=True)
     completed_at = db.Column(db.DateTime, nullable=True, index=True)
     duration_seconds = db.Column(db.Integer, nullable=True)
+    
+    # Archive support for database optimization
+    archived = db.Column(db.Boolean, default=False, index=True)
     
     # Scan configuration
     scan_config = db.Column(db.JSON, nullable=True)  # Additional scan parameters
@@ -97,49 +113,20 @@ class Scan(db.Model):
         
         # Count vulnerabilities by severity
         if zap_results and 'alerts' in zap_results:
-            alerts = zap_results['alerts']
-            self.vulnerabilities_count = len(alerts)
+            severity_counts = {'High': 0, 'Medium': 0, 'Low': 0, 'Informational': 0}
+            for alert in zap_results['alerts']:
+                risk = alert.get('risk', 'Informational')
+                if risk in severity_counts:
+                    severity_counts[risk] += 1
             
-            # Count by risk level
-            for alert in alerts:
-                risk = alert.get('risk', '').lower()
-                if risk == 'high':
-                    self.high_severity_count += 1
-                elif risk == 'medium':
-                    self.medium_severity_count += 1
-                elif risk == 'low':
-                    self.low_severity_count += 1
-                else:
-                    self.info_severity_count += 1
-    
-    def calculate_risk_score(self):
-        """Calculate overall risk score based on vulnerabilities"""
-        if self.vulnerabilities_count == 0:
-            self.risk_score = 0.0
-        else:
-            # Weighted scoring: High=3, Medium=2, Low=1, Info=0.5
-            weighted_score = (
-                self.high_severity_count * 3 +
-                self.medium_severity_count * 2 +
-                self.low_severity_count * 1 +
-                self.info_severity_count * 0.5
-            )
-            # Normalize to 0-10 scale
-            self.risk_score = min(10.0, weighted_score / max(1, self.vulnerabilities_count) * 2)
-    
-    def get_duration(self):
-        """Get scan duration in human-readable format"""
-        if self.duration_seconds:
-            minutes = self.duration_seconds // 60
-            seconds = self.duration_seconds % 60
-            if minutes > 0:
-                return f"{minutes}m {seconds}s"
-            else:
-                return f"{seconds}s"
-        return None
+            self.high_severity_count = severity_counts['High']
+            self.medium_severity_count = severity_counts['Medium'] 
+            self.low_severity_count = severity_counts['Low']
+            self.info_severity_count = severity_counts['Informational']
+            self.vulnerabilities_count = sum(severity_counts.values())
     
     def to_dict(self):
-        """Convert scan object to dictionary"""
+        """Convert scan to dictionary"""
         return {
             'id': self.id,
             'user_id': self.user_id,
@@ -149,7 +136,6 @@ class Scan(db.Model):
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'started_at': self.started_at.isoformat() if self.started_at else None,
             'completed_at': self.completed_at.isoformat() if self.completed_at else None,
-            'duration': self.get_duration(),
             'duration_seconds': self.duration_seconds,
             'vulnerabilities_count': self.vulnerabilities_count,
             'high_severity_count': self.high_severity_count,
@@ -157,46 +143,41 @@ class Scan(db.Model):
             'low_severity_count': self.low_severity_count,
             'info_severity_count': self.info_severity_count,
             'risk_score': self.risk_score,
-            'pages_scanned': self.pages_scanned,
-            'requests_made': self.requests_made,
-            'progress_percentage': self.progress_percentage,
             'nlp_summary': self.nlp_summary,
-            'error_message': self.error_message
+            'progress_percentage': self.progress_percentage,
+            'archived': self.archived
         }
     
     def __repr__(self):
-        return f'<Scan {self.id}: {self.target_url} ({self.status})>'
+        return f'<Scan {self.id}: {self.target_url}>'
 
 class Vulnerability(db.Model):
     """Individual vulnerability found in scans"""
     __tablename__ = 'vulnerabilities'
     
-    id = db.Column(db.Integer, primary_key=True, index=True)
+    id = db.Column(db.Integer, primary_key=True)
     scan_id = db.Column(db.Integer, db.ForeignKey('scans.id'), nullable=False, index=True)
     
     # Vulnerability details
-    name = db.Column(db.String(255), nullable=False)
-    description = db.Column(db.Text, nullable=True)
-    risk_level = db.Column(db.String(20), nullable=False, index=True)  # High, Medium, Low, Informational
-    confidence = db.Column(db.String(20), nullable=True)
+    name = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text, nullable=False)
+    severity = db.Column(db.String(20), nullable=False, index=True)  # High, Medium, Low, Info
+    confidence = db.Column(db.String(20), nullable=True)  # High, Medium, Low
     
-    # Location information
-    url = db.Column(db.String(500), nullable=True)
-    parameter = db.Column(db.String(255), nullable=True)
+    # Location details
+    url = db.Column(db.String(500), nullable=False)
+    parameter = db.Column(db.String(200), nullable=True)
     method = db.Column(db.String(10), nullable=True)  # GET, POST, etc.
     
     # Technical details
-    cwe_id = db.Column(db.Integer, nullable=True)  # Common Weakness Enumeration ID
-    wasc_id = db.Column(db.Integer, nullable=True)  # Web Application Security Consortium ID
-    reference = db.Column(db.Text, nullable=True)  # Reference URLs
+    attack = db.Column(db.Text, nullable=True)  # Attack vector used
+    evidence = db.Column(db.Text, nullable=True)  # Evidence of vulnerability
+    solution = db.Column(db.Text, nullable=True)  # Recommended fix
+    reference = db.Column(db.Text, nullable=True)  # External references
     
-    # Evidence
-    attack = db.Column(db.Text, nullable=True)  # Attack string used
-    evidence = db.Column(db.Text, nullable=True)  # Evidence found
-    
-    # Additional data
-    other_info = db.Column(db.Text, nullable=True)
-    solution = db.Column(db.Text, nullable=True)
+    # OWASP/CWE categorization
+    cwe_id = db.Column(db.Integer, nullable=True)
+    wasc_id = db.Column(db.Integer, nullable=True)
     
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
@@ -207,162 +188,304 @@ class Vulnerability(db.Model):
             'scan_id': self.scan_id,
             'name': self.name,
             'description': self.description,
-            'risk_level': self.risk_level,
+            'severity': self.severity,
             'confidence': self.confidence,
             'url': self.url,
             'parameter': self.parameter,
             'method': self.method,
-            'cwe_id': self.cwe_id,
-            'wasc_id': self.wasc_id,
-            'reference': self.reference,
             'attack': self.attack,
             'evidence': self.evidence,
-            'other_info': self.other_info,
             'solution': self.solution,
+            'reference': self.reference,
+            'cwe_id': self.cwe_id,
+            'wasc_id': self.wasc_id,
             'created_at': self.created_at.isoformat() if self.created_at else None
         }
     
     def __repr__(self):
-        return f'<Vulnerability {self.name} ({self.risk_level})>'
+        return f'<Vulnerability {self.name} ({self.severity})>'
 
 class Feedback(db.Model):
-    """Feedback model for user suggestions and bug reports"""
+    """User feedback and bug reports"""
     __tablename__ = 'feedback'
     
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
-    feedback = db.Column(db.Text, nullable=False)
-    type = db.Column(db.String(50), default='general')  # general, bug, feature
-    priority = db.Column(db.String(20), default='medium')  # low, medium, high
-    status = db.Column(db.String(20), default='new')  # new, reviewed, resolved
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True, index=True)
+    
+    # Feedback content
+    type = db.Column(db.String(20), nullable=False, index=True)  # bug, feature, general
+    subject = db.Column(db.String(200), nullable=False)
+    message = db.Column(db.Text, nullable=False)
+    
+    # Optional metadata
+    browser = db.Column(db.String(100), nullable=True)
+    user_agent = db.Column(db.String(500), nullable=True)
+    url = db.Column(db.String(500), nullable=True)  # Page where feedback was given
+    
+    # Status tracking
+    status = db.Column(db.String(20), default='open', index=True)  # open, in_progress, resolved
+    admin_notes = db.Column(db.Text, nullable=True)
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
-    # Relationships
-    user = db.relationship('User', backref='feedback_submissions')
-    
     def to_dict(self):
-        """Convert feedback object to dictionary"""
+        """Convert feedback to dictionary"""
         return {
             'id': self.id,
             'user_id': self.user_id,
-            'feedback': self.feedback,
             'type': self.type,
-            'priority': self.priority,
+            'subject': self.subject,
+            'message': self.message,
             'status': self.status,
             'created_at': self.created_at.isoformat() if self.created_at else None,
-            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
-            'user_email': self.user.email if self.user else 'Anonymous'
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None
         }
     
     def __repr__(self):
-        return f'<Feedback {self.id} ({self.type})>'
+        return f'<Feedback {self.subject}>'
 
-# Database initialization functions
-def init_db(app):
-    """Initialize database with app context"""
-    db.init_app(app)
+class ApiKey(db.Model):
+    """API keys for programmatic access"""
+    __tablename__ = 'api_keys'
     
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+    
+    # Key details
+    name = db.Column(db.String(100), nullable=False)  # User-friendly name
+    key_hash = db.Column(db.String(255), nullable=False, unique=True, index=True)
+    key_prefix = db.Column(db.String(10), nullable=False)  # First few chars for identification
+    
+    # Permissions and limits
+    permissions = db.Column(db.JSON, default=lambda: {'scan': True, 'read': True})
+    rate_limit = db.Column(db.Integer, default=100)  # Requests per hour
+    
+    # Status and tracking
+    is_active = db.Column(db.Boolean, default=True, index=True)
+    last_used = db.Column(db.DateTime, nullable=True)
+    usage_count = db.Column(db.Integer, default=0)
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    expires_at = db.Column(db.DateTime, nullable=True)
+    
+    # Relationships
+    user = db.relationship('User', backref='api_keys')
+    
+    def to_dict(self):
+        """Convert API key to dictionary (excluding sensitive data)"""
+        return {
+            'id': self.id,
+            'name': self.name,
+            'key_prefix': self.key_prefix,
+            'permissions': self.permissions,
+            'rate_limit': self.rate_limit,
+            'is_active': self.is_active,
+            'last_used': self.last_used.isoformat() if self.last_used else None,
+            'usage_count': self.usage_count,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'expires_at': self.expires_at.isoformat() if self.expires_at else None
+        }
+    
+    def __repr__(self):
+        return f'<ApiKey {self.name} ({self.key_prefix}...)>'
+
+class Badge(db.Model):
+    """User achievement badges"""
+    __tablename__ = 'badges'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+    
+    # Badge details
+    name = db.Column(db.String(50), nullable=False)  # e.g., "10 Scans", "First Vulnerability"
+    description = db.Column(db.String(200), nullable=True)
+    icon = db.Column(db.String(50), nullable=True)  # Icon class or emoji
+    category = db.Column(db.String(30), nullable=False, index=True)  # scanning, social, achievement
+    
+    # Achievement tracking
+    awarded_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    user = db.relationship('User', backref='badges')
+    
+    def to_dict(self):
+        """Convert badge to dictionary"""
+        return {
+            'id': self.id,
+            'name': self.name,
+            'description': self.description,
+            'icon': self.icon,
+            'category': self.category,
+            'awarded_at': self.awarded_at.isoformat() if self.awarded_at else None
+        }
+    
+    def __repr__(self):
+        return f'<Badge {self.name}>'
+
+class Referral(db.Model):
+    """User referral system"""
+    __tablename__ = 'referrals'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    referrer_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+    referee_email = db.Column(db.String(120), nullable=False)
+    code = db.Column(db.String(10), unique=True, nullable=False, index=True)
+    redeemed = db.Column(db.Boolean, default=False, index=True)
+    redeemed_by_user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    redeemed_at = db.Column(db.DateTime, nullable=True)
+    
+    # Reward tracking
+    reward_granted = db.Column(db.Boolean, default=False)
+    reward_type = db.Column(db.String(20), default='scan_limit')  # scan_limit, premium_trial
+    reward_amount = db.Column(db.Integer, default=5)  # Number of scans or days
+    
+    def to_dict(self):
+        """Convert referral to dictionary"""
+        return {
+            'id': self.id,
+            'referee_email': self.referee_email,
+            'code': self.code,
+            'redeemed': self.redeemed,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'redeemed_at': self.redeemed_at.isoformat() if self.redeemed_at else None,
+            'reward_granted': self.reward_granted,
+            'reward_type': self.reward_type,
+            'reward_amount': self.reward_amount
+        }
+    
+    def __repr__(self):
+        return f'<Referral {self.code}>'
+
+class AuditLog(db.Model):
+    """Audit logs for admin actions"""
+    __tablename__ = 'audit_logs'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    admin_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+    action = db.Column(db.String(100), nullable=False, index=True)
+    details = db.Column(db.JSON, nullable=True)
+    ip_address = db.Column(db.String(45), nullable=True)  # IPv6 compatible
+    user_agent = db.Column(db.String(500), nullable=True)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+    
+    def to_dict(self):
+        """Convert audit log to dictionary"""
+        return {
+            'id': self.id,
+            'admin_id': self.admin_id,
+            'action': self.action,
+            'details': self.details,
+            'ip_address': self.ip_address,
+            'timestamp': self.timestamp.isoformat() if self.timestamp else None
+        }
+    
+    def __repr__(self):
+        return f'<AuditLog {self.action}>'
+
+class Schedule(db.Model):
+    """Scheduled scans"""
+    __tablename__ = 'schedules'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+    
+    # Schedule details
+    name = db.Column(db.String(100), nullable=False)
+    url = db.Column(db.String(500), nullable=False)
+    scan_type = db.Column(db.String(50), nullable=False, default='spider')
+    frequency = db.Column(db.String(20), nullable=False, index=True)  # daily, weekly, monthly
+    
+    # Schedule configuration
+    is_active = db.Column(db.Boolean, default=True, index=True)
+    next_run = db.Column(db.DateTime, nullable=True, index=True)
+    last_run = db.Column(db.DateTime, nullable=True)
+    run_count = db.Column(db.Integer, default=0)
+    
+    # Scan configuration
+    scan_config = db.Column(db.JSON, default=lambda: {"max_depth": 10, "timeout": 300})
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def to_dict(self):
+        """Convert schedule to dictionary"""
+        return {
+            'id': self.id,
+            'name': self.name,
+            'url': self.url,
+            'scan_type': self.scan_type,
+            'frequency': self.frequency,
+            'is_active': self.is_active,
+            'next_run': self.next_run.isoformat() if self.next_run else None,
+            'last_run': self.last_run.isoformat() if self.last_run else None,
+            'run_count': self.run_count,
+            'scan_config': self.scan_config,
+            'created_at': self.created_at.isoformat() if self.created_at else None
+        }
+    
+    def __repr__(self):
+        return f'<Schedule {self.name}>'
+
+def init_db(app):
+    """Initialize database with sample data"""
     with app.app_context():
         db.create_all()
         
-        # Create default admin user if not exists
+        # Check if admin user exists
         admin_user = User.query.filter_by(email='admin@websecpen.com').first()
         if not admin_user:
             admin_user = User(
                 email='admin@websecpen.com',
                 first_name='Admin',
                 last_name='User',
-                is_admin=True
+                is_admin=True,
+                role='admin',
+                scan_limit=9999,
+                preferences={"notifications": True, "has_seen_tutorial": True}
             )
             admin_user.set_password('admin123')
             db.session.add(admin_user)
-            db.session.commit()
-            print("Default admin user created: admin@websecpen.com / admin123")
+        
+        # Create test user if not exists
+        test_user = User.query.filter_by(email='test@websecpen.com').first()
+        if not test_user:
+            test_user = User(
+                email='test@websecpen.com',
+                first_name='Test',
+                last_name='User',
+                role='premium',
+                scan_limit=50,
+                preferences={"notifications": True, "has_seen_tutorial": False}
+            )
+            test_user.set_password('test123')
+            db.session.add(test_user)
+        
+        db.session.commit()
+        print("Database initialized successfully!")
 
-def create_sample_data():
+def create_sample_data(app):
     """Create sample data for testing"""
-    # Create test user
-    test_user = User.query.filter_by(email='test@example.com').first()
-    if not test_user:
-        test_user = User(
-            email='test@example.com',
-            first_name='Test',
-            last_name='User'
-        )
-        test_user.set_password('test123')
-        db.session.add(test_user)
+    with app.app_context():
+        # Add sample feedback
+        if not Feedback.query.first():
+            sample_feedback = [
+                Feedback(
+                    user_id=1,
+                    type='feature',
+                    subject='Great scanning tool!',
+                    message='I love how fast and accurate the vulnerability scanning is. Could you add more scan types?'
+                ),
+                Feedback(
+                    user_id=2,
+                    type='bug',
+                    subject='Dashboard loading issue',
+                    message='The dashboard sometimes takes a long time to load when I have many scans.'
+                )
+            ]
+            for feedback in sample_feedback:
+                db.session.add(feedback)
+        
         db.session.commit()
-    
-    # Create sample scan
-    sample_scan = Scan.query.filter_by(target_url='https://example.com').first()
-    if not sample_scan:
-        sample_scan = Scan(
-            user_id=test_user.id,
-            target_url='https://example.com',
-            scan_type='XSS',
-            status='completed',
-            vulnerabilities_count=3,
-            high_severity_count=1,
-            medium_severity_count=1,
-            low_severity_count=1,
-            pages_scanned=25,
-            requests_made=150,
-            progress_percentage=100,
-            duration_seconds=180,
-            risk_score=6.5,
-            nlp_summary='Multiple XSS vulnerabilities detected in form inputs and URL parameters.'
-        )
-        db.session.add(sample_scan)
-        db.session.commit()
-        print("Sample data created successfully")
-
-class ApiKey(db.Model):
-    """API Keys for third-party integrations"""
-    __tablename__ = 'api_keys'
-    
-    id = db.Column(db.Integer, primary_key=True, index=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
-    key = db.Column(db.String(64), unique=True, nullable=False, index=True)
-    name = db.Column(db.String(100), nullable=False)  # Key description/name
-    is_active = db.Column(db.Boolean, default=True, index=True)
-    permissions = db.Column(db.JSON, nullable=True)  # Specific permissions
-    last_used_at = db.Column(db.DateTime, nullable=True)
-    usage_count = db.Column(db.Integer, default=0)
-    rate_limit = db.Column(db.Integer, default=1000)  # Requests per hour
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
-    expires_at = db.Column(db.DateTime, nullable=True)
-    
-    # Relationship
-    user = db.relationship('User', backref='api_keys')
-    
-    def is_valid(self):
-        """Check if API key is valid and not expired"""
-        if not self.is_active:
-            return False
-        if self.expires_at and self.expires_at < datetime.utcnow():
-            return False
-        return True
-    
-    def increment_usage(self):
-        """Increment usage count and update last used timestamp"""
-        self.usage_count += 1
-        self.last_used_at = datetime.utcnow()
-        db.session.commit()
-    
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'name': self.name,
-            'key': self.key[:8] + '...' + self.key[-4:],  # Masked key
-            'is_active': self.is_active,
-            'permissions': self.permissions,
-            'last_used_at': self.last_used_at.isoformat() if self.last_used_at else None,
-            'usage_count': self.usage_count,
-            'rate_limit': self.rate_limit,
-            'created_at': self.created_at.isoformat(),
-            'expires_at': self.expires_at.isoformat() if self.expires_at else None
-        }
-    
-    def __repr__(self):
-        return f'<ApiKey {self.name} for user {self.user_id}>' 
+        print("Sample data created successfully!")
