@@ -1,0 +1,163 @@
+%----------------------------------------------------------------------------------------
+%   Доорх хэсгийг өөрчлөх шаардлагагүй
+%----------------------------------------------------------------------------------------
+%!TEX TS-program = xelatex
+%!TEX encoding = UTF-8 Unicode
+\documentclass[12pt,A4]{report}
+
+\usepackage{fontspec,xltxtra,xunicode}
+\setmainfont[Ligatures=TeX]{Times New Roman}
+\setsansfont{Arial}
+
+% \usepackage[utf8x]{inputenc}
+% \usepackage[mongolian]{babel}
+%\usepackage{natbib}
+\usepackage{geometry}
+%\usepackage{fancyheadings} fancyheadings is obsolete: replaced by fancyhdr. JL
+\usepackage{fancyhdr}
+\usepackage{float}
+\usepackage{afterpage}
+\usepackage{graphicx}
+\usepackage{amsmath,amssymb,amsbsy}
+\usepackage{dcolumn,array}
+\usepackage{tocloft}
+\usepackage{dics}
+\usepackage{nomencl}
+\usepackage{upgreek}
+\newcommand{\argmin}{\arg\!\min}
+\usepackage{mathtools}
+\usepackage[hidelinks]{hyperref}
+
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+
+\usepackage{listings}
+\DeclarePairedDelimiter\abs{\lvert}{\rvert}%
+\makeatletter
+\usepackage{caption}
+\captionsetup[table]{belowskip=0.5pt}
+\usepackage{subfiles}
+\usepackage{subcaption} 
+
+\usepackage{listings}
+\renewcommand{\lstlistingname}{Код}
+\renewcommand{\lstlistlistingname}{\lstlistingname ын жагсаалт}
+
+\usepackage{color}
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.99,0.99,0.99}
+ 
+\lstdefinestyle{mystyle}{
+    basicstyle=\ttfamily\small,
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    %basicstyle=\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=false,                 
+    numbers=left,                    
+    numbersep=10pt,                  
+    showspaces=false,                
+    showstringspaces=true,
+    showtabs=false,                  
+    tabsize=2
+}
+ 
+\lstset{style=mystyle, label=DescriptiveLabel} 
+
+\let\oldabs\abs
+\def\abs{\@ifstar{\oldabs}{\oldabs*}}
+\makenomenclature
+\begin{document}
+
+
+%----------------------------------------------------------------------------------------
+%   Өөрийн мэдээллээ оруулах хэсэг
+%----------------------------------------------------------------------------------------
+
+% Дадлагын ажлын сэдэв
+\title{БД СИСТЕМС ЭЙЖИА ХХК-Д ХИЙСЭН ДАДЛАГЫН АЖЛЫН ТАЙЛАН}
+% Дадлагын ажлын англи нэр
+\titleEng{Internship Report at BD Systems Asia LLC}
+% Өөрийн овог нэрийг бүтнээр нь бичнэ
+\author{[Таны овог нэр]}
+% Өөрийн овгийн эхний үсэг нэрээ бичнэ
+\authorShort{[Т.Нэр]}
+% Удирдагчийн зэрэг цол овгийн эхний үсэг нэр
+\supervisor{[Багш]}
+% Хамтарсан удирдагчийн зэрэг цол овгийн эхний үсэг нэр
+%\cosupervisor{Др. Г.Амарсанаа}
+
+% СиСи дугаар 
+\sisiId{[Оюутны дугаар]}
+% Их сургуулийн нэр
+\university{МОНГОЛ УЛСЫН ИХ СУРГУУЛЬ}
+% Бүрэлдэхүүн сургуулийн нэр
+\faculty{МЭДЭЭЛЭЛ, КОМПЬЮТЕРЫН УХААНЫ ТЭНХИМ}
+% Тэнхимийн нэр
+\department{МЭДЭЭЛЭЛ, КОМПЬЮТЕРЫН УХААНЫ ТЭНХИМ}
+% Зэргийн нэр
+\degreeName{Дадлагын ажлын тайлан}
+% Суралцаж буй хөтөлбөрийн нэр
+\programeName{Компьютерын ухаан}
+% Хэвлэгдсэн газар
+\cityName{Улаанбаатар}
+% Хэвлэгдсэн огноо
+\gradyear{2025 оны 09 сар}
+
+
+%----------------------------------------------------------------------------------------
+%   Доорх хэсгийг өөрчлөх шаардлагагүй
+%----------------------------------------------------------------------------------------
+\include{main-pre}
+
+% Удиртгалыг оруулж ирэх ба abstract.tex файлд удиртгалаа бичнэ
+\include{abstract}
+
+%----------------------------------------------------------------------------------------
+%   Дадлагын үндсэн хэсэг эндээс эхэлнэ
+%----------------------------------------------------------------------------------------
+\addcontentsline{toc}{part}{БҮЛГҮҮД}
+% Шинэ бүлэг
+\chapter{Компанийн танилцуулга}
+\subfile{chapter1.tex}
+\chapter{Дадлагын хөтөлбөр ба арга зүй}
+\subfile{chapter2.tex}
+\chapter{Хийгдсэн ажлууд}
+\subfile{chapter3.tex}
+\chapter{Үр дүн ба дүгнэлт}
+\subfile{chapter4.tex}
+
+\conclusion{Дүгнэлт}
+\subfile{conclusion.tex}
+
+\singlespace
+\addcontentsline{toc}{part}{НОМ ЗҮЙ}
+\begin{thebibliography}{} 
+    \bibitem{1} Moreira, D., Seara, J. P., Pavia, J. P., \& Serrão, C. (2025). "Intelligent Platform for Automating Vulnerability Detection in Web Applications". Electronics, 14(1), 79.
+    \bibitem{2} Statista. (2024). "Internet usage worldwide - Statistics \& Facts". \url{https://www.statista.com/topics/1145/internet-usage-worldwide/}
+    \bibitem{3} OWASP Foundation. (2024). "OWASP Top Ten 2024". \url{https://owasp.org/Top10/}
+    \bibitem{4} Bitdefender. (2024). "About Bitdefender - Company Overview". \url{https://www.bitdefender.com/company/}
+    \bibitem{5} Maniraj, S. P., Ranganathan, C. S., \& Sekar, S. (2024). "Securing Web Applications with OWASP ZAP for Comprehensive Security Testing". International Journal of Advances in Signal and Image Sciences, 10(2), 12-23.
+    \bibitem{6} Potti, U. S., Huang, H. S., Chen, H. T., \& Sun, H. M. (2025). "Security Testing Framework for Web Applications: Benchmarking ZAP V2.12.0 and V2.13.0 by OWASP as an example". arXiv:2501.05907.
+    \bibitem{7} Xiong, Z., \& Ye, J. (2024). "Security Vulnerability Scanning Scheme of Web Application Based on Django". In Proceedings of the 3rd International Conference on Cognitive Based Information Processing and Applications.
+    \bibitem{8} Disawal, S., \& Suman, U. (2024). "Enhancing Security to Prevent Vulnerabilities in Web Applications". International Journal of Engineering Trends and Technology, 72(7), 130-140.
+    \bibitem{9} Flask Development Team. (2024). "Flask Documentation". \url{https://flask.palletsprojects.com/}
+    \bibitem{10} React Team. (2024). "React Documentation". \url{https://react.dev/}
+    \bibitem{11} OWASP ZAP Team. (2024). "OWASP ZAP Documentation". \url{https://www.zaproxy.org/docs/}
+    \bibitem{12} HuggingFace Team. (2024). "Transformers Documentation". \url{https://huggingface.co/docs/transformers/}
+    \bibitem{13} Celery Project. (2024). "Celery Documentation". \url{https://docs.celeryproject.org/}
+    \bibitem{14} Redis Labs. (2024). "Redis Documentation". \url{https://redis.io/documentation}
+    \bibitem{15} PostgreSQL Global Development Group. (2024). "PostgreSQL Documentation". \url{https://www.postgresql.org/docs/}
+\end{thebibliography}
+
+\appendix
+\addcontentsline{toc}{part}{ХАВСРАЛТ}
+\subfile{appendix.tex}
+\end{document} 

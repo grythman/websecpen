@@ -1,0 +1,90 @@
+%----------------------------------------------------------------------------------------
+%   Title page setup
+%----------------------------------------------------------------------------------------
+
+\newgeometry{top=3cm,bottom=3cm,left=3cm,right=3cm}
+
+\begin{titlepage}
+\begin{center}
+
+\vspace*{1cm}
+
+{\Large \university}
+
+\vspace{0.5cm}
+
+{\large \faculty}
+
+\vspace{0.3cm}
+
+{\normalsize \department}
+
+\vspace{3cm}
+
+{\huge \@title}
+
+\vspace{0.5cm}
+
+{\Large \titleEng}
+
+\vspace{3cm}
+
+{\large \degreeName}
+
+\vspace{0.5cm}
+
+{\normalsize \programeName}
+
+\vspace{2cm}
+
+\begin{tabular}{ll}
+Гүйцэтгэсэн: & \authorShort \\
+             & \sisiId \\[1cm]
+Удирдагч:    & \supervisor \\
+\ifcsname cosupervisor\endcsname
+Хамтарсан удирдагч: & \cosupervisor \\
+\fi
+\end{tabular}
+
+\vfill
+
+{\large \cityName}
+
+\vspace{0.5cm}
+
+{\large \gradyear}
+
+\end{center}
+\end{titlepage}
+
+\restoregeometry
+
+%----------------------------------------------------------------------------------------
+%   Setup page numbering and headers
+%----------------------------------------------------------------------------------------
+
+% Агуулгын хүснэгт, зурган жагсаалт зэрэгт римийн тоо ашиглах
+\pagenumbering{roman}
+\setcounter{page}{1}
+
+% Header тохиргоо
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[C]{\small БД Системс Эйжиа ХХК Дадлагын Ажлын Тайлан}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+% Chapter heading тохиргоо
+\renewcommand{\chaptername}{БҮЛЭГ}
+
+% Агуулгын хүснэгт
+\renewcommand{\contentsname}{АГУУЛГА}
+\renewcommand{\listfigurename}{ЗУРГИЙН ЖАГСААЛТ}
+\renewcommand{\listtablename}{ХҮСНЭГТИЙН ЖАГСААЛТ}
+
+% Зураг, хүснэгтийн нэрийг монголоор
+\renewcommand{\figurename}{Зураг}
+\renewcommand{\tablename}{Хүснэгт}
+
+% Bibliography нэрийг монголоор
+\renewcommand{\bibname}{НОМ ЗҮЙ} 

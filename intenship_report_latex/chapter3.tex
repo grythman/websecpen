@@ -1,0 +1,341 @@
+\documentclass[main.tex]{subfiles}
+
+\begin{document}
+
+\section{WebSecPen системийн хөгжүүлэлт}
+
+\subsection{Системийн архитектур дизайн}
+
+WebSecPen нь орчин үеийн вэб аппликейшний аюулгүй байдлыг автоматаар шалгах, мониторинг хийх зориулалттай систем юм. Систем нь client-server архитектураар хэрэгжиж, RESTful API ашиглан харилцдаг.
+
+\begin{figure}[h]
+\centering
+\begin{lstlisting}[language=bash, caption=Системийн архитектурын бүрэлдэхүүн]
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   React         │    │   Flask         │    │   PostgreSQL    │
+│   Frontend      │◄──►│   Backend       │◄──►│   Database      │
+│                 │    │                 │    │                 │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+                              │
+                              ▼
+                       ┌─────────────────┐
+                       │   OWASP ZAP     │
+                       │   Scanner       │
+                       └─────────────────┘
+                              │
+                              ▼
+                       ┌─────────────────┐
+                       │   HuggingFace   │
+                       │   AI Models     │
+                       └─────────────────┘
+\end{lstlisting}
+\end{figure}
+
+\subsubsection{Үндсэн модулууд}
+\begin{enumerate}
+    \item \textbf{Authentication модуль:} JWT ашиглан хэрэглэгчийн баталгаажуулалт
+    \item \textbf{Scan модуль:} OWASP ZAP интеграци, скан удирдлага
+    \item \textbf{Analysis модуль:} Үр дүн шинжилгээ, AI зөвлөмж
+    \item \textbf{Report модуль:} PDF тайлан үүсгэх
+    \item \textbf{Admin модуль:} Системийн администраци
+\end{enumerate}
+
+\subsection{Өгөгдлийн сангийн загвар}
+
+Системийн өгөгдлийн сан нь дараах үндсэн entity-үүдээс бүрдэнэ:
+
+\begin{lstlisting}[language=Python, caption=User модель]
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    password = db.Column(db.String(255), nullable=False)
+    role = db.Column(db.String(20), default='free')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    scans = db.relationship('Scan', backref='user', lazy=True)
+\end{lstlisting}
+
+\begin{lstlisting}[language=Python, caption=Scan модель]
+class Scan(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    url = db.Column(db.String(255), nullable=False)
+    status = db.Column(db.String(50), default='pending')
+    results = db.Column(db.JSON)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+\end{lstlisting}
+
+\begin{lstlisting}[language=Python, caption=Vulnerability модель]
+class Vulnerability(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    scan_id = db.Column(db.Integer, db.ForeignKey('scan.id'))
+    type = db.Column(db.String(100), nullable=False)
+    severity = db.Column(db.String(20), nullable=False)
+    description = db.Column(db.Text)
+    recommendation = db.Column(db.Text)
+\end{lstlisting}
+
+\subsection{REST API дизайн}
+
+Системийн API нь RESTful архитектурын дагуу дизайлагдсан бөгөөд дараах үндсэн endpoint-ууд байна:
+
+\subsubsection{Authentication endpoints}
+\begin{lstlisting}[language=bash, caption=Аутентификацийн API]
+POST /api/auth/register  - Бүртгүүлэх
+POST /api/auth/login     - Нэвтрэх
+POST /api/auth/logout    - Гарах
+GET  /api/auth/profile   - Профайл харах
+\end{lstlisting}
+
+\subsubsection{Scan endpoints}
+\begin{lstlisting}[language=bash, caption=Сканны API]
+POST /api/scan/start     - Шинэ скан эхлүүлэх
+GET  /api/scan/history   - Скан түүх харах
+GET  /api/scan/result/{id} - Скан үр дүн авах
+DELETE /api/scan/{id}    - Скан устгах
+\end{lstlisting}
+
+\subsubsection{Report endpoints}
+\begin{lstlisting}[language=bash, caption=Тайлангийн API]
+GET  /api/report/{scan_id}/pdf    - PDF тайлан татах
+GET  /api/report/{scan_id}/json   - JSON форматаар авах
+POST /api/report/generate         - Тайлан үүсгэх
+\end{lstlisting}
+
+\subsection{Frontend компонент дизайн}
+
+React ашиглан бүтээсэн frontend нь дараах үндсэн компонентуудаас бүрдэнэ:
+
+\begin{lstlisting}[language=JavaScript, caption=App.js - Үндсэн компонент]
+function App() {
+  return (
+    <Router>
+      <div className="App">
+        <Header />
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/scan" element={<ScanForm />} />
+          <Route path="/results" element={<Results />} />
+        </Routes>
+      </div>
+    </Router>
+  );
+}
+\end{lstlisting}
+
+\subsubsection{Dashboard компонент}
+\begin{itemize}
+    \item Нийт скан тоо
+    \item Сүүлийн үр дүн
+    \item Аюулын түвшин график
+    \item Хурдан скан эхлүүлэх товч
+\end{itemize}
+
+\subsubsection{ScanForm компонент}
+\begin{itemize}
+    \item URL оруулах талбар
+    \item Скан төрөл сонгох
+    \item Дэвшилтэт тохиргоо
+    \item Скан эхлүүлэх товч
+\end{itemize}
+
+\section{Вэб аппликейшний аюулгүй байдлын шинжилгээ}
+
+\subsection{OWASP ZAP интеграци}
+
+OWASP ZAP (Zed Attack Proxy) нь нээлттэй эхийн вэб аппликейшний аюулгүй байдлын шалгалтын хамгийн алдартай багаж юм. WebSecPen систем нь ZAP-ийн Python API ашиглан интеграци хийсэн.
+
+\begin{lstlisting}[language=Python, caption=ZAP Scanner класс]
+from zapv2 import ZAPv2
+
+class ZAPScanner:
+    def __init__(self):
+        self.zap = ZAPv2(proxies={'http': 'http://127.0.0.1:8080'})
+    
+    def start_spider_scan(self, url):
+        scan_id = self.zap.spider.scan(url)
+        return scan_id
+    
+    def start_active_scan(self, url):
+        scan_id = self.zap.ascan.scan(url)
+        return scan_id
+    
+    def get_alerts(self):
+        return self.zap.core.alerts()
+\end{lstlisting}
+
+\subsubsection{Скан төрлүүд}
+\begin{enumerate}
+    \item \textbf{Spider скан:}
+    \begin{itemize}
+        \item Вэб сайтын бүтцийг судлах
+        \item Линк, хуудас олж илрүүлэх
+        \item Sitemap үүсгэх
+    \end{itemize}
+    
+    \item \textbf{Active скан:}
+    \begin{itemize}
+        \item Бодит халдлага симуляци
+        \item SQL injection, XSS тест
+        \item Аюулгүй байдлын сул тал илрүүлэх
+    \end{itemize}
+    
+    \item \textbf{Passive скан:}
+    \begin{itemize}
+        \item HTTP дүрэм зөрчил илрүүлэх
+        \item Мэдээлэл алдагдах эрсдэл
+        \item Тохиргооны алдаа
+    \end{itemize}
+\end{enumerate}
+
+\subsection{Аюулгүй байдлын шинжилгээний алгоритм}
+
+Системд хэрэгжүүлсэн шинжилгээний алгоритм нь OWASP Top 10 стандартад тулгуурладаг \cite{3}:
+
+\subsubsection{Аюулын ангилал}
+\begin{enumerate}
+    \item \textbf{Critical (Маш эмзэг):}
+    \begin{itemize}
+        \item SQL Injection
+        \item Remote Code Execution
+        \item Authentication Bypass
+    \end{itemize}
+    
+    \item \textbf{High (Өндөр):}
+    \begin{itemize}
+        \item Cross-Site Scripting (XSS)
+        \item Cross-Site Request Forgery (CSRF)
+        \item Insecure Direct Object Reference
+    \end{itemize}
+    
+    \item \textbf{Medium (Дунд):}
+    \begin{itemize}
+        \item Session Management алдаа
+        \item Input Validation алдаа
+        \item Information Disclosure
+    \end{itemize}
+    
+    \item \textbf{Low (Бага):}
+    \begin{itemize}
+        \item HTTP Header дутагдал
+        \item Cookie тохиргооны алдаа
+        \item Version дэлгэх
+    \end{itemize}
+\end{enumerate}
+
+\subsection{AI ашиглан зөвлөмж систем}
+
+HuggingFace-ийн NLP моделийг ашиглан илрүүлсэн аюулгүй байдлын асуудалд зөвлөмж, засварлах арга зам санал болгох систем хөгжүүлэв \cite{12}.
+
+\begin{lstlisting}[language=Python, caption=AI Vulnerability Advisor]
+from transformers import pipeline
+
+class VulnerabilityAdvisor:
+    def __init__(self):
+        self.generator = pipeline('text-generation', 
+                                model='gpt2')
+    
+    def get_recommendation(self, vulnerability_type, description):
+        prompt = f"""
+        Vulnerability: {vulnerability_type}
+        Description: {description}
+        
+        Recommended solution:
+        """
+        
+        response = self.generator(prompt, 
+                                max_length=200, 
+                                num_return_sequences=1)
+        return response[0]['generated_text']
+\end{lstlisting}
+
+\subsubsection{Зөвлөмжийн ангилал}
+\begin{enumerate}
+    \item \textbf{Засмад санал:}
+    \begin{itemize}
+        \item Кодын жишээ
+        \item Тохиргооны өөрчлөлт
+        \item Шинэ хамгаалалтын арга
+    \end{itemize}
+    
+    \item \textbf{Урьдчилан сэргийлэх арга:}
+    \begin{itemize}
+        \item Input validation
+        \item Output encoding
+        \item Access control
+    \end{itemize}
+    
+    \item \textbf{Мониторинг санал:}
+    \begin{itemize}
+        \item Log хөтлөх
+        \item Анхааруулга тохируулах
+        \item Тогтмол шалгалт
+    \end{itemize}
+\end{enumerate}
+
+\section{Автомат шалгалтын системийн бүтээн байгуулалт}
+
+\subsection{Celery ашиглан асинхрон ажлын дараалал}
+
+Скан процесс нь удаан ажилладаг тул асинхрон байдлаар ажиллуулах шаардлагатай. Үүний тулд Celery ашиглан background task систем хэрэгжүүлэв \cite{13}.
+
+\begin{lstlisting}[language=Python, caption=Celery асинхрон даалгавар]
+from celery import Celery
+
+celery_app = Celery('websecpen',
+                   broker='redis://localhost:6379/0',
+                   backend='redis://localhost:6379/0')
+
+@celery_app.task
+def start_security_scan(url, user_id):
+    # ZAP скан эхлүүлэх
+    scanner = ZAPScanner()
+    
+    # Spider скан
+    spider_id = scanner.start_spider_scan(url)
+    
+    # Spider дуусах хүртэл хүлээх
+    while int(scanner.zap.spider.status(spider_id)) < 100:
+        time.sleep(5)
+    
+    # Active скан
+    active_id = scanner.start_active_scan(url)
+    
+    # Active скан дуусах хүртэл хүлээх
+    while int(scanner.zap.ascan.status(active_id)) < 100:
+        time.sleep(10)
+    
+    # Үр дүн авах
+    alerts = scanner.get_alerts()
+    
+    # Өгөгдлийн санд хадгалах
+    scan = Scan(user_id=user_id, url=url, 
+                status='completed', results=alerts)
+    db.session.add(scan)
+    db.session.commit()
+    
+    return scan.id
+\end{lstlisting}
+
+\subsection{Redis кэш система}
+
+Скан үр дүн, хэрэглэгчийн session зэрэг өгөгдлийг хурдан харуулахын тулд Redis кэш систем ашигласан \cite{14}.
+
+\begin{lstlisting}[language=Python, caption=Redis кэш системийн ашиглалт]
+import redis
+
+redis_client = redis.Redis(host='localhost', port=6379, db=0)
+
+def cache_scan_result(scan_id, result):
+    key = f"scan_result:{scan_id}"
+    redis_client.setex(key, 3600, json.dumps(result))  # 1 цагийн кэш
+
+def get_cached_result(scan_id):
+    key = f"scan_result:{scan_id}"
+    cached = redis_client.get(key)
+    if cached:
+        return json.loads(cached)
+    return None
+\end{lstlisting}
+
+\end{document} 

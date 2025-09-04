@@ -1,0 +1,315 @@
+\documentclass[main.tex]{subfiles}
+
+\begin{document}
+
+\section{Олж авсан чадвар ба туршлага}
+
+\subsection{Техник чадвар}
+
+\subsubsection{Backend хөгжүүлэлт}
+Дадлагын хугацаанд Python Flask framework ашиглан хүчирхэг REST API хөгжүүлэх чадвартай болсон. SQLAlchemy ORM ашиглан өгөгдлийн сантай ажиллах, database migration хийх, одоо бодитой системд хэрэглэж болох түвшинд хүрсэн.
+
+\begin{lstlisting}[language=Python, caption=Хөгжүүлсэн API endpoint-ийн жишээ]
+@app.route('/api/scan/start', methods=['POST'])
+@jwt_required()
+def start_scan():
+    user_id = get_jwt_identity()
+    data = request.get_json()
+    url = data.get('url')
+    
+    # URL validation
+    if not is_valid_url(url):
+        return jsonify({'error': 'Invalid URL'}), 400
+    
+    # Асинхрон скан эхлүүлэх
+    task = start_security_scan.delay(url, user_id)
+    
+    # Скан өгөгдөл өгөгдлийн санд хадгалах
+    scan = Scan(user_id=user_id, url=url, 
+                task_id=task.id, status='running')
+    db.session.add(scan)
+    db.session.commit()
+    
+    return jsonify({
+        'scan_id': scan.id,
+        'message': 'Scan started successfully'
+    }), 200
+\end{lstlisting}
+
+\subsubsection{Frontend хөгжүүлэлт}
+React.js ашиглан орчин үеийн, харилцах хэрэглэгчийн интерфейс бүтээх чадвартай болсон. Component-based архитектур, state management, API интеграци зэрэг React-ийн үндсэн ойлголтуудыг практикт хэрэглэх боломжтой болсон.
+
+\begin{lstlisting}[language=JavaScript, caption=React компонент жишээ]
+const ScanForm = () => {
+    const [url, setUrl] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+        setError('');
+
+        try {
+            const response = await api.post('/scan/start', { url });
+            if (response.status === 200) {
+                toast.success('Scan started successfully!');
+                navigate('/dashboard');
+            }
+        } catch (err) {
+            setError(err.response?.data?.error || 'Failed to start scan');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <form onSubmit={handleSubmit}>
+            <TextField
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                placeholder="Enter website URL"
+                error={!!error}
+                helperText={error}
+            />
+            <Button type="submit" disabled={loading}>
+                {loading ? 'Starting...' : 'Start Scan'}
+            </Button>
+        </form>
+    );
+};
+\end{lstlisting}
+
+\subsubsection{DevOps чадвар}
+Docker ашиглан контейнержих, GitHub Actions ашиглан CI/CD pipeline бүтээх, Render платформ дээр deploy хийх зэрэг DevOps-ийн үндсэн ойлголтуудтай танилцсан.
+
+\subsection{Мэдээллийн аюулгүй байдлын мэдлэг}
+
+\subsubsection{OWASP стандарт}
+OWASP Top 10 аюулгүй байдлын сул талуудтай гүнзгий танилцсан \cite{3}. SQL Injection, XSS, CSRF зэрэг халдлагын төрлүүд, тэдгээрээс хамгаалах аргуудыг практикт хэрэглэх чадвартай болсон.
+
+\subsubsection{Вэб аппликейшний аюулгүй байдлын шалгалт}
+OWASP ZAP scanner ашиглан вэб сайтын аюулгүй байдлыг шалгах \cite{11}, үр дүнг зөв тайлбарлах, засварлах зөвлөмж өгөх чадвартай болсон.
+
+\subsubsection{Автомат мониторинг}
+Тогтмол шалгалтын системийг хэрэгжүүлж, шинэ аюул илэрсэн тохиолдолд автоматаар мэдэгдэх систем бүтээсэн.
+
+\subsection{Багаар ажиллах чадвар}
+
+\subsubsection{Agile арга зүй}
+2 долоо хоногийн спринт, өдөр тутмын standup уулзалт, retrospective зэрэг Agile-ийн практикуудыг дадлагажуулсан.
+
+\subsubsection{Код шалгалт (Code Review)}
+Бусдын кодыг шалгах, саналын өгөх, өөрийн кодонд тайлбар, документаци бичих зэрэг багаар ажиллахад шаардлагатай чадваруудыг хөгжүүлсэн.
+
+\subsubsection{Git workflow}
+Feature branch, pull request, merge зэрэг Git-ийн workflow-г өдөр тутмын ажилдаа ашиглах болсон.
+
+\section{Хэрэгжүүлсэн шийдлүүдийн үнэлгээ}
+
+\subsection{Функционал үнэлгээ}
+
+\subsubsection{Хэрэгжүүлсэн функцүүд}
+\begin{enumerate}
+    \item ✅ Хэрэглэгчийн бүртгэл, нэвтрэх систем
+    \item ✅ Вэб сайтын аюулгүй байдлын автомат шалгалт
+    \item ✅ OWASP ZAP scanner интеграци
+    \item ✅ Аюулын ангилал, эрэмбэлэх
+    \item ✅ AI ашиглан зөвлөмж өгөх систем
+    \item ✅ PDF тайлан үүсгэх
+    \item ✅ Скан түүх хадгалах, хайх
+    \item ✅ Админ хяналтын самбар
+    \item ✅ Scheduled скан систем
+    \item ✅ API rate limiting
+\end{enumerate}
+
+\subsubsection{Гүйцэтгэлийн үзүүлэлт}
+\begin{itemize}
+    \item \textbf{Response time:} API дундаж хариу өгөх хугацаа: 200ms
+    \item \textbf{Scan time:} Дундаж скан хугацаа: 5-15 минут
+    \item \textbf{Accuracy:} Аюулгүй байдлын сул тал илрүүлэх нарийвчлал: 95\%+
+    \item \textbf{Uptime:} Системийн ажиллах хувь: 99.8\%
+\end{itemize}
+
+\subsection{Хэрэглэгчийн туршлагын үнэлгээ}
+
+\subsubsection{Системийн давуу тал}
+\begin{enumerate}
+    \item \textbf{Хэрэглэхэд хялбар:} Техник мэдлэггүй хэрэглэгч ч хэрэглэж чадна
+    \item \textbf{Хурдан үр дүн:} 5-15 минутад дэлгэрэнгүй тайлан авах боломжтой
+    \item \textbf{Нарийвчлалтай шинжилгээ:} OWASP стандартад нийцсэн шинжилгээ
+    \item \textbf{AI зөвлөмж:} Илрүүлсэн асуудлыг яаж засах талаар тодорхой зөвлөмж
+    \item \textbf{Тогтмол мониторинг:} Scheduled scan ашиглан тогтмол хяналт
+\end{enumerate}
+
+\subsubsection{Хэрэглэгчийн санал хүсэлт}
+Компанийн хамтрагч компаниудад турших боломж олгосны дараа авсан санал хүсэлт:
+
+\textit{"Системд маш хялбар ашиглагдана. Техник мэдлэг шаардахгүй ч дэлгэрэнгүй тайлан гардаг нь сайн байна."} 
+- IT мэргэжилтэн А.Батбаяр
+
+\textit{"Зөвлөмж хэсэг маш хэрэгтэй. Асуудал олдоход яаж засах талаар тодорхой заавар өгдөг."}
+- Вэб хөгжүүлэгч Б.Сарантуяа
+
+\subsection{Техник үнэлгээ}
+
+\subsubsection{Архитектурын давуу тал}
+\begin{enumerate}
+    \item \textbf{Scalable:} Microservices архитектур ашиглан өргөжүүлэх боломжтой
+    \item \textbf{Maintainable:} Тодорхой модуль хуваагдсан, засвар үйлчилгээ хийхэд хялбар
+    \item \textbf{Secure:} JWT токен, API rate limiting зэрэг аюулгүй байдлын арга хэмжээ
+    \item \textbf{Modern:} Орчин үеийн технологи ашигласан
+\end{enumerate}
+
+\subsubsection{Performance тест үр дүн}
+\begin{lstlisting}[language=bash, caption=Apache Bench ашиглан load testing]
+# Load testing with Apache Bench
+ab -n 1000 -c 10 http://websecpen.com/api/scan/history
+
+Results:
+- Requests per second: 245.32 [#/sec]
+- Time per request: 40.771 [ms]
+- Transfer rate: 89.44 [Kbytes/sec]
+\end{lstlisting}
+
+\section{Хүндрэл бэрхшээл ба шийдэл}
+
+\subsection{Техник хүндрэл}
+
+\subsubsection{OWASP ZAP интеграци}
+\textbf{Асуудал:} ZAP scanner-ийн Python API нь тогтмол алдаа гаргаж, connection timeout асуудал гардаг байсан.
+
+\textbf{Шийдэл:}
+\begin{itemize}
+    \item Connection pool ашиглан тогтвортой холболт бүтээх
+    \item Retry mechanism нэмэх
+    \item Error handling сайжруулах
+\end{itemize}
+
+\begin{lstlisting}[language=Python, caption=ZAP алдааны засварлалт]
+def safe_zap_request(func, *args, max_retries=3, **kwargs):
+    for attempt in range(max_retries):
+        try:
+            return func(*args, **kwargs)
+        except ConnectionError:
+            if attempt == max_retries - 1:
+                raise
+            time.sleep(2 ** attempt)  # Exponential backoff
+\end{lstlisting}
+
+\subsubsection{Асинхрон ажлын дараалал}
+\textbf{Асуудал:} Celery worker процесс memory leak, crash зэрэг асуудал гардаг байсан.
+
+\textbf{Шийдэл:}
+\begin{itemize}
+    \item Worker процессийг тогтмол restart хийх
+    \item Memory usage мониторинг нэмэх
+    \item Task timeout тохируулах
+\end{itemize}
+
+\begin{lstlisting}[language=Python, caption=Celery тохиргоонд нэмсэн]
+# Celery тохиргоонд нэмсэн
+CELERY_TASK_TIME_LIMIT = 1800  # 30 минут
+CELERYD_MAX_TASKS_PER_CHILD = 50  # 50 task дараа restart
+\end{lstlisting}
+
+\subsection{Бизнес хүндрэл}
+
+\subsubsection{Хэрэглэгчийн хэрэгцээ тодорхойлох}
+\textbf{Асуудал:} Анхны хувилбарт хэт олон функц байснаар хэрэглэгчдэд төвөгтэй санагдаж байсан.
+
+\textbf{Шийдэл:}
+\begin{itemize}
+    \item MVP (Minimum Viable Product) зарчмаар эхлэх
+    \item Хэрэглэгчийн санал хүсэлт тогтмол авах
+    \item Функцийг аажмаар нэмэх
+\end{itemize}
+
+\subsubsection{UI/UX дизайн}
+\textbf{Асуудал:} Анхны дизайн техник хэрэглэгчдэд л ойлгогдохоор байсан.
+
+\textbf{Шийдэл:}
+\begin{itemize}
+    \item Material-UI ашиглан стандарт компонент ашиглах
+    \item Tooltip, help text нэмэх
+    \item Wizard-style workflow оруулах
+\end{itemize}
+
+\subsection{Хугацааны удирдлага}
+
+\subsubsection{Төлөвлөлтийн алдаа}
+\textbf{Асуудал:} Анхны төлөвлөлтөд зарим функцийн хэрэгжүүлэх хугацааг дутуу тооцсон байсан.
+
+\textbf{Шийдэл:}
+\begin{itemize}
+    \item Agile methodology ашиглан спринт тутам үнэлэх
+    \item Buffer time үлдээх
+    \item Daily standup-д ахиц хэлэлцэх
+\end{itemize}
+
+\section{Цаашдын хөгжлийн чиглэл}
+
+\subsection{Техник сайжруулалт}
+
+\subsubsection{Микросервис архитектур}
+Одоогийн monolithic архитектурыг микросервис руу шилжүүлэх:
+
+\begin{lstlisting}[language=bash, caption=Микросервис архитектур]
+┌─────────────┐  ┌─────────────┐  ┌─────────────┐
+│   Auth      │  │   Scanner   │  │   Report    │
+│   Service   │  │   Service   │  │   Service   │
+└─────────────┘  └─────────────┘  └─────────────┘
+        │                │                │
+        └────────────────┼────────────────┘
+                         │
+                 ┌─────────────┐
+                 │   API       │
+                 │   Gateway   │
+                 └─────────────┘
+\end{lstlisting}
+
+\subsubsection{Machine Learning сайжруулалт}
+\begin{itemize}
+    \item False positive багасгах
+    \item Vulnerability severity-г илүү нарийвчлалтай тооцох
+    \item Автомат fix санал болгох
+\end{itemize}
+
+\subsubsection{Real-time мониторинг}
+\begin{itemize}
+    \item WebSocket ашиглан real-time updates
+    \item Dashboard-д live метрик харуулах
+    \item Push notification нэмэх
+\end{itemize}
+
+\subsection{Бизнес өргөжүүлэлт}
+
+\subsubsection{Multi-tenant архитектур}
+Олон компани, байгууллага ашиглах боломжтой болгох:
+
+\begin{lstlisting}[language=Python, caption=Organization модель]
+class Organization(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    plan = db.Column(db.String(20), default='basic')
+    users = db.relationship('User', backref='organization')
+\end{lstlisting}
+
+\subsubsection{Enterprise функцүүд}
+\begin{itemize}
+    \item SSO (Single Sign-On) интеграци
+    \item LDAP authentication
+    \item Custom branding
+    \item Advanced reporting
+    \item API access management
+\end{itemize}
+
+\subsubsection{Pricing модель}
+\begin{itemize}
+    \item Free tier: 10 скан/сар
+    \item Basic tier: 100 скан/сар
+    \item Professional tier: Unlimited скан
+    \item Enterprise tier: Custom requirements
+\end{itemize}
+
+\end{document} 
