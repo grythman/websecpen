@@ -12,6 +12,9 @@ import Badges from './Badges.jsx';
 import Upgrade from './Upgrade.jsx';
 import NotificationSettings from './NotificationSettings.jsx';
 import AdminDashboard from './AdminDashboard.jsx';
+import VulnTrends from './VulnTrends.jsx';
+import NotificationPreferences from './NotificationPreferences.jsx';
+import ApiKeyManager from './ApiKeyManager.jsx';
 import './Dashboard.css';
 import './EnhancedDashboard.css';
 
@@ -71,8 +74,11 @@ const EnhancedDashboard = ({ onLogout }) => {
   const navigationItems = [
     { id: 'dashboard', label: 'Dashboard', icon: '🏠' },
     { id: 'trends', label: 'Trends', icon: '📊' },
+    { id: 'vuln-trends', label: 'Analysis', icon: '📈' },
     { id: 'badges', label: 'Achievements', icon: '🏅' },
     { id: 'notifications', label: 'Notifications', icon: '🔔' },
+    { id: 'preferences', label: 'Preferences', icon: '⚙️' },
+    { id: 'api-keys', label: 'API Keys', icon: '🔑' },
     ...(userRole === 'free' ? [{ id: 'upgrade', label: 'Upgrade', icon: '⭐' }] : []),
     ...(isAdmin ? [{ id: 'admin', label: 'Admin', icon: '🛠️' }] : []),
   ];
@@ -81,10 +87,16 @@ const EnhancedDashboard = ({ onLogout }) => {
     switch (activeTab) {
       case 'trends':
         return <Trends />;
+      case 'vuln-trends':
+        return <VulnTrends />;
       case 'badges':
         return <Badges />;
       case 'notifications':
         return <NotificationSettings />;
+      case 'preferences':
+        return <NotificationPreferences />;
+      case 'api-keys':
+        return <ApiKeyManager />;
       case 'admin':
         return isAdmin ? <AdminDashboard /> : null;
       case 'upgrade':

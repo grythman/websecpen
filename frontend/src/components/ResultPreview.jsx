@@ -1,6 +1,7 @@
 // src/components/ResultPreview.jsx
-import React, { useContext } from 'react';
+import React, { useContext, useState } from 'react';
 import { ThemeContext } from '../ThemeContext.jsx';
+import ScanDiff from './ScanDiff.jsx';
 import './ResultPreview.css';
 
 // Mock data with more detailed results
@@ -50,8 +51,9 @@ const mockResult = {
   }
 };
 
-const ResultPreview = () => {
+const ResultPreview = ({ scanId = 1 }) => {
   const { theme } = useContext(ThemeContext);
+  const [showDiff, setShowDiff] = useState(false);
 
   const getSeverityColor = (severity) => {
     switch (severity.toLowerCase()) {
@@ -165,6 +167,12 @@ const ResultPreview = () => {
         <button className="action-btn primary">
           📄 View Full Report
         </button>
+        <button 
+          className="action-btn secondary"
+          onClick={() => setShowDiff(true)}
+        >
+          🔄 Compare with Previous
+        </button>
         <button className="action-btn secondary">
           ⬇️ Download PDF
         </button>
@@ -172,6 +180,14 @@ const ResultPreview = () => {
           📤 Export JSON
         </button>
       </div>
+
+      {/* Scan Diff Modal */}
+      {showDiff && (
+        <ScanDiff 
+          scanId={scanId} 
+          onClose={() => setShowDiff(false)} 
+        />
+      )}
     </div>
   );
 };
