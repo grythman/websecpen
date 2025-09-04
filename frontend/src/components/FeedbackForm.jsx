@@ -1,26 +1,17 @@
 // src/components/FeedbackForm.jsx - User Feedback System
-import { useState, useContext } from 'react';
-import { ThemeContext } from '../ThemeContext.jsx';
-import { useError } from '../context/ErrorContext.jsx';
-import apiService from '../utils/api.js';
+import React, { useState } from 'react';
 import './FeedbackForm.css';
 
-const FeedbackForm = ({ isModal = false, onClose = null }) => {
-  const { theme } = useContext(ThemeContext);
-  const { showError, showSuccess, loading, setLoadingState } = useError();
-  
+const FeedbackForm = ({ onSubmitSuccess }) => {
   const [formData, setFormData] = useState({
-    feedback: '',
-    type: 'general'
+    type: 'general',
+    subject: '',
+    rating: 0,
+    message: ''
   });
-
-  const feedbackTypes = [
-    { value: 'general', label: '💬 General Feedback', description: 'General comments and suggestions' },
-    { value: 'bug', label: '🐛 Bug Report', description: 'Report a problem or error' },
-    { value: 'feature', label: '✨ Feature Request', description: 'Suggest a new feature' },
-    { value: 'security', label: '🔒 Security Issue', description: 'Report a security concern' },
-    { value: 'performance', label: '⚡ Performance Issue', description: 'Report slow or unresponsive behavior' }
-  ];
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState('');
+  const [hoveredStar, setHoveredStar] = useState(0);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -30,187 +21,207 @@ const FeedbackForm = ({ isModal = false, onClose = null }) => {
     }));
   };
 
+  const handleStarClick = (rating) => {
+    setFormData(prev => ({
+      ...prev,
+      rating
+    }));
+  };
+
+  const handleStarHover = (rating) => {
+    setHoveredStar(rating);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!formData.feedback.trim()) {
-      showError('Please enter your feedback');
+    if (formData.rating === 0) {
+      setMessage('Please provide a rating');
       return;
     }
 
-    if (formData.feedback.length < 10) {
-      showError('Please provide more detailed feedback (at least 10 characters)');
-      return;
-    }
-
-    if (formData.feedback.length > 5000) {
-      showError('Feedback is too long (maximum 5000 characters)');
-      return;
-    }
-
-    setLoadingState(true);
+    setLoading(true);
+    setMessage('');
 
     try {
-      await apiService.request('/feedback', {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/feedback', {
         method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
         body: JSON.stringify(formData)
       });
 
-      showSuccess('Thank you for your feedback! We appreciate your input.');
-      
-      // Reset form
-      setFormData({
-        feedback: '',
-        type: 'general'
-      });
+      const data = await response.json();
 
-      // Close modal if this is a modal
-      if (isModal && onClose) {
-        setTimeout(onClose, 1500);
+      if (response.ok) {
+        setMessage('Thank you for your feedback! We appreciate your input.');
+        setFormData({
+          type: 'general',
+          subject: '',
+          rating: 0,
+          message: ''
+        });
+        if (onSubmitSuccess) {
+          onSubmitSuccess(data);
+        }
+      } else {
+        setMessage(data.error || 'Failed to submit feedback');
       }
-
     } catch (error) {
-      showError(error.message || 'Failed to submit feedback. Please try again.');
+      setMessage('Error submitting feedback. Please try again.');
+      console.error('Feedback submission error:', error);
     } finally {
-      setLoadingState(false);
+      setLoading(false);
     }
   };
 
-  const selectedType = feedbackTypes.find(type => type.value === formData.type);
+  const getRatingText = (rating) => {
+    const ratingTexts = {
+      1: 'Very Poor',
+      2: 'Poor', 
+      3: 'Average',
+      4: 'Good',
+      5: 'Excellent'
+    };
+    return ratingTexts[rating] || '';
+  };
 
-  const feedbackContent = (
-    <>
+  return (
+    <div className="feedback-form">
       <div className="feedback-header">
-        <h3>📝 Send Us Feedback</h3>
-        <p>Help us improve WebSecPen by sharing your thoughts, reporting bugs, or suggesting features.</p>
+        <h3>💬 Share Your Feedback</h3>
+        <p>Help us improve WebSecPen by sharing your thoughts and suggestions</p>
       </div>
 
-      <form onSubmit={handleSubmit} className="feedback-form-content" aria-label="Submit feedback">
+      <form onSubmit={handleSubmit}>
+        {/* Feedback Type */}
         <div className="form-group">
-          <label htmlFor="type" className="form-label">
-            Feedback Type *
-          </label>
+          <label htmlFor="type">Feedback Type</label>
           <select
             id="type"
             name="type"
             value={formData.type}
             onChange={handleInputChange}
-            className="form-select"
             disabled={loading}
-            required
           >
-            {feedbackTypes.map((type) => (
-              <option key={type.value} value={type.value}>
-                {type.label}
-              </option>
-            ))}
+            <option value="general">General Feedback</option>
+            <option value="bug">Bug Report</option>
+            <option value="feature">Feature Request</option>
           </select>
-          <div className="form-hint">
-            {selectedType?.description}
-          </div>
         </div>
 
+        {/* Subject */}
         <div className="form-group">
-          <label htmlFor="feedback" className="form-label">
-            Your Feedback *
-          </label>
-          <textarea
-            id="feedback"
-            name="feedback"
-            value={formData.feedback}
+          <label htmlFor="subject">Subject *</label>
+          <input
+            id="subject"
+            name="subject"
+            type="text"
+            value={formData.subject}
             onChange={handleInputChange}
-            placeholder="Please describe your feedback in detail..."
-            className="form-textarea"
+            placeholder="Brief description of your feedback"
             disabled={loading}
             required
-            rows={6}
-            minLength={10}
-            maxLength={5000}
-            aria-label="Feedback details"
+            minLength={5}
+            maxLength={200}
           />
-          <div className="character-count">
-            {formData.feedback.length}/5000 characters
-            {formData.feedback.length < 10 && (
-              <span className="count-warning"> (minimum 10 characters)</span>
-            )}
+          <small>{formData.subject.length}/200 characters</small>
+        </div>
+
+        {/* Rating */}
+        <div className="form-group">
+          <label>Overall Rating *</label>
+          <div className="rating-container">
+            <div className="stars">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button
+                  key={star}
+                  type="button"
+                  className={`star ${star <= (hoveredStar || formData.rating) ? 'active' : ''}`}
+                  onClick={() => handleStarClick(star)}
+                  onMouseEnter={() => handleStarHover(star)}
+                  onMouseLeave={() => setHoveredStar(0)}
+                  disabled={loading}
+                  aria-label={`Rate ${star} star${star > 1 ? 's' : ''}`}
+                >
+                  ★
+                </button>
+              ))}
+            </div>
+            <span className="rating-text">
+              {getRatingText(hoveredStar || formData.rating)}
+            </span>
           </div>
         </div>
 
-        <div className="feedback-tips">
-          <h4>💡 Tips for effective feedback:</h4>
-          <ul>
-            <li><strong>Be specific</strong>: Include details about what you were doing when the issue occurred</li>
-            <li><strong>Include steps</strong>: Help us reproduce bugs by listing the steps you took</li>
-            <li><strong>Be constructive</strong>: Suggest improvements or alternatives</li>
-            <li><strong>Check first</strong>: Look for existing feedback about the same issue</li>
-          </ul>
+        {/* Message */}
+        <div className="form-group">
+          <label htmlFor="message">Your Message *</label>
+          <textarea
+            id="message"
+            name="message"
+            value={formData.message}
+            onChange={handleInputChange}
+            placeholder={getPlaceholderText(formData.type)}
+            disabled={loading}
+            required
+            minLength={10}
+            maxLength={1000}
+            rows={5}
+          />
+          <small>{formData.message.length}/1000 characters</small>
         </div>
 
+        {/* Submit Button */}
         <div className="form-actions">
-          <button 
-            type="submit" 
-            className={`btn btn-primary ${loading ? 'loading' : ''}`}
-            disabled={loading || formData.feedback.length < 10}
+          <button
+            type="submit"
+            disabled={loading || formData.rating === 0}
+            className="submit-button"
           >
             {loading ? (
               <>
-                <span className="loading-spinner"></span>
+                <span className="button-spinner"></span>
                 Submitting...
               </>
             ) : (
               <>
-                <span className="btn-icon">📤</span>
-                Submit Feedback
+                📤 Submit Feedback
               </>
             )}
           </button>
-          
-          {isModal && (
-            <button 
-              type="button" 
-              className="btn btn-secondary"
-              onClick={onClose}
-              disabled={loading}
-            >
-              Cancel
-            </button>
-          )}
         </div>
 
-        <div className="privacy-notice">
-          <p>
-            <span className="privacy-icon">🔒</span>
-            Your feedback helps us improve WebSecPen. We don&apos;t share your feedback with third parties.
-            {apiService.isAuthenticated() ? 
-              ' Your feedback is linked to your account for follow-up.' : 
-              ' You\'re submitting anonymous feedback.'
-            }
-          </p>
-        </div>
-      </form>
-    </>
-  );
-
-  if (isModal) {
-    return (
-      <div className="modal-overlay" onClick={onClose}>
-        <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-          <button className="modal-close" onClick={onClose} aria-label="Close feedback form">
-            ×
-          </button>
-          <div className={`feedback-form ${theme} modal`}>
-            {feedbackContent}
+        {message && (
+          <div className={`feedback-message ${message.includes('Thank you') ? 'success' : 'error'}`}>
+            {message}
           </div>
-        </div>
-      </div>
-    );
-  }
+        )}
+      </form>
 
-  return (
-    <div className={`feedback-form ${theme}`}>
-      {feedbackContent}
+      {/* Feedback Guidelines */}
+      <div className="feedback-guidelines">
+        <h4>💡 Feedback Guidelines</h4>
+        <ul>
+          <li><strong>Bug Reports:</strong> Include steps to reproduce, expected vs actual behavior</li>
+          <li><strong>Feature Requests:</strong> Describe the problem you're trying to solve</li>
+          <li><strong>General Feedback:</strong> Share your overall experience and suggestions</li>
+        </ul>
+      </div>
     </div>
   );
+
+  function getPlaceholderText(type) {
+    const placeholders = {
+      general: 'Share your overall experience with WebSecPen. What do you like? What could be improved?',
+      bug: 'Describe the bug you encountered. Include steps to reproduce the issue and what you expected to happen.',
+      feature: 'Describe the feature you would like to see. Explain how it would help you and why it would be valuable.'
+    };
+    return placeholders[type] || placeholders.general;
+  }
 };
 
 export default FeedbackForm; 

@@ -26,6 +26,7 @@ from premium_features import init_premium_routes
 from advanced_features import init_advanced_routes
 from new_advanced_features import init_new_advanced_routes
 from advanced_analytics import init_advanced_analytics, init_advanced_routes as init_analytics_routes
+from aug17_features import init_aug17_routes
 from pdf_report import generate_pdf_report
 
 app = Flask(__name__)
@@ -798,6 +799,9 @@ init_new_advanced_routes(app)
 # Initialize advanced analytics and real-time features
 socketio = init_advanced_analytics(app)
 init_analytics_routes(app)
+
+# Initialize August 17th features
+init_aug17_routes(app)
 
 @app.route('/api/scan/report/<int:scan_id>/pdf', methods=['GET'])
 @jwt_required()
