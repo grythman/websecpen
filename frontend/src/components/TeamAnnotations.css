@@ -1,0 +1,323 @@
+.team-annotations {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  padding: 20px;
+  margin-top: 20px;
+  max-width: 100%;
+}
+
+.annotations-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 2px solid #e9ecef;
+}
+
+.annotations-header h4 {
+  margin: 0;
+  color: #2c3e50;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.vuln-name {
+  font-size: 0.9rem;
+  color: #6c757d;
+  font-style: italic;
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Annotations List */
+.annotations-list {
+  max-height: 400px;
+  overflow-y: auto;
+  margin-bottom: 20px;
+  padding-right: 5px;
+}
+
+.loading-annotations {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 40px;
+  color: #6c757d;
+}
+
+.loading-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #f3f3f3;
+  border-top: 2px solid #007bff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.annotation-item {
+  background: white;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  padding: 15px;
+  margin-bottom: 12px;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.annotation-item:hover {
+  border-color: #007bff;
+  box-shadow: 0 2px 8px rgba(0, 123, 255, 0.1);
+}
+
+.annotation-item:last-child {
+  margin-bottom: 0;
+}
+
+.annotation-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.annotation-user {
+  font-weight: 600;
+  color: #2c3e50;
+  font-size: 0.9rem;
+}
+
+.annotation-time {
+  font-size: 0.8rem;
+  color: #6c757d;
+}
+
+.annotation-comment {
+  color: #495057;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+/* No Annotations State */
+.no-annotations {
+  text-align: center;
+  padding: 40px 20px;
+  color: #6c757d;
+}
+
+.no-annotations-icon {
+  font-size: 3rem;
+  margin-bottom: 15px;
+  opacity: 0.5;
+}
+
+.no-annotations p {
+  margin: 5px 0;
+  line-height: 1.4;
+}
+
+.no-annotations p:first-of-type {
+  font-weight: 500;
+  color: #495057;
+}
+
+/* Add Annotation Form */
+.add-annotation-form {
+  background: white;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  padding: 15px;
+  margin-bottom: 20px;
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+.annotation-textarea {
+  width: 100%;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  padding: 10px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  resize: vertical;
+  min-height: 80px;
+  transition: border-color 0.3s ease;
+}
+
+.annotation-textarea:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.textarea-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 5px;
+}
+
+.character-count {
+  font-size: 0.8rem;
+  color: #6c757d;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.add-annotation-btn {
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 16px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.add-annotation-btn:hover:not(:disabled) {
+  background: #0056b3;
+  transform: translateY(-1px);
+}
+
+.add-annotation-btn:disabled {
+  background: #6c757d;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.btn-icon {
+  font-size: 0.8rem;
+}
+
+/* Tips Section */
+.annotations-tips {
+  background: #e8f4fd;
+  border: 1px solid #b8daff;
+  border-radius: 6px;
+  padding: 15px;
+  margin-top: 10px;
+}
+
+.annotations-tips h5 {
+  margin: 0 0 10px 0;
+  color: #004085;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.annotations-tips ul {
+  margin: 0;
+  padding-left: 20px;
+  color: #004085;
+}
+
+.annotations-tips li {
+  font-size: 0.8rem;
+  line-height: 1.4;
+  margin-bottom: 4px;
+}
+
+.annotations-tips li:last-child {
+  margin-bottom: 0;
+}
+
+/* Scrollbar Styling */
+.annotations-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.annotations-list::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.annotations-list::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.annotations-list::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .team-annotations {
+    padding: 15px;
+    margin-top: 15px;
+  }
+  
+  .annotations-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  
+  .vuln-name {
+    max-width: 100%;
+  }
+  
+  .annotation-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+  }
+  
+  .annotations-list {
+    max-height: 300px;
+  }
+  
+  .annotation-textarea {
+    min-height: 60px;
+  }
+  
+  .annotations-tips {
+    padding: 12px;
+  }
+  
+  .annotations-tips ul {
+    padding-left: 15px;
+  }
+}
+
+@media (max-width: 480px) {
+  .team-annotations {
+    padding: 12px;
+  }
+  
+  .annotation-item {
+    padding: 12px;
+  }
+  
+  .add-annotation-form {
+    padding: 12px;
+  }
+  
+  .no-annotations {
+    padding: 30px 15px;
+  }
+  
+  .no-annotations-icon {
+    font-size: 2.5rem;
+  }
+} 

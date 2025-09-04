@@ -818,6 +818,34 @@ try:
 except ImportError as e:
     print(f"Aug 19 enhancements not available: {e}")
 
+# Initialize August 20-25 features
+try:
+    from aug20_25_features import init_aug20_25_routes
+    init_aug20_25_routes(app)
+except ImportError as e:
+    print(f"Aug 20-25 features not available: {e}")
+
+# Initialize External Integrations
+try:
+    from integrations_aug22_25 import init_all_integrations
+    init_all_integrations(app)
+except ImportError as e:
+    print(f"External integrations not available: {e}")
+
+# Initialize August 20-25 features
+try:
+    from aug20_25_features import init_aug20_25_routes
+    init_aug20_25_routes(app)
+except ImportError as e:
+    print(f"Aug 20-25 features not available: {e}")
+
+# Initialize External Integrations
+try:
+    from integrations_aug22_25 import init_all_integrations
+    init_all_integrations(app)
+except ImportError as e:
+    print(f"External integrations not available: {e}")
+
 @app.route('/api/scan/report/<int:scan_id>/pdf', methods=['GET'])
 @jwt_required()
 def export_scan_pdf(scan_id):
