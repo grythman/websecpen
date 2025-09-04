@@ -1412,7 +1412,7 @@ def init_two_factor_auth(app):
             )
             
             # Generate QR code image as base64
-            import qrcode
+            # import qrcode  # Temporarily disabled
             qr = qrcode.QRCode(version=1, box_size=10, border=5)
             qr.add_data(qr_uri)
             qr.make(fit=True)

@@ -21,7 +21,7 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Table, TableStyle
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib import colors
 from pyotp import TOTP
-import qrcode
+# import qrcode  # Temporarily disabled
 from prometheus_client import Counter, Histogram, generate_latest
 import time
 

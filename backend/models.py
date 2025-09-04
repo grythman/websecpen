@@ -489,3 +489,38 @@ def create_sample_data(app):
         
         db.session.commit()
         print("Sample data created successfully!")
+
+class Team(db.Model):
+    """Team model for collaboration"""
+    __tablename__ = 'teams'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    owner_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    owner = db.relationship('User', backref='owned_teams')
+    
+    def __repr__(self):
+        return f'<Team {self.name}>'
+
+
+class TeamMember(db.Model):
+    """Team member model for team collaboration"""
+    __tablename__ = 'team_members'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    team_id = db.Column(db.Integer, db.ForeignKey('teams.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    role = db.Column(db.String(20), default='member')  # member, admin
+    permissions = db.Column(db.JSON, default=['view'])  # view, scan, edit
+    joined_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    team = db.relationship('Team', backref='members')
+    user = db.relationship('User', backref='team_memberships')
+    
+    def __repr__(self):
+        return f'<TeamMember {self.user_id} in team {self.team_id}>'
+

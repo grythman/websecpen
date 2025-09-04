@@ -5,7 +5,7 @@ import os
 import io
 import json
 import pyotp
-import qrcode
+# import qrcode  # Temporarily disabled
 import requests
 import secrets
 from datetime import datetime, timedelta
