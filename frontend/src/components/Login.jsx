@@ -1,248 +1,115 @@
 // src/components/Login.jsx
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext';
+import { useState, useContext } from 'react';
+import { ThemeContext } from '../context/ThemeContext.jsx';
+import { useAuth } from '../context/AuthContext.jsx';
+import { useError } from '../context/ErrorContext.jsx';
+import Logo from './Logo.jsx';
 import './Login.css';
 
-const Login = ({ onSuccess }) => {
-  const { login, register, error, isLoginLoading, isRegisterLoading, clearError } = useAuth();
-  const [isLoginMode, setIsLoginMode] = useState(true);
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-    confirmPassword: '',
-    firstName: '',
-    lastName: ''
-  });
-  const [localError, setLocalError] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
+const Login = ({ onLogin }) => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const { theme } = useContext(ThemeContext);
+  const { login } = useAuth();
+  const { addError } = useError();
 
-  // Clear errors when switching modes
-  useEffect(() => {
-    clearError();
-    setLocalError('');
-  }, [isLoginMode, clearError]);
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-    // Clear local error when user starts typing
-    if (localError) setLocalError('');
-  };
-
-  const validateForm = () => {
-    if (!formData.email || !formData.password) {
-      setLocalError('Email and password are required');
-      return false;
-    }
-
-    if (!isLoginMode) {
-      if (formData.password !== formData.confirmPassword) {
-        setLocalError('Passwords do not match');
-        return false;
-      }
-      if (formData.password.length < 6) {
-        setLocalError('Password must be at least 6 characters long');
-        return false;
-      }
-    }
-
-    return true;
+  const validateEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
+
+    // Client-side validation
+    if (!email || !password) {
+      setError('Please fill in all fields');
+      return;
+    }
+
+    if (!validateEmail(email)) {
+      setError('Please enter a valid email address');
+      return;
+    }
+
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters');
+      return;
+    }
+
+    setIsLoading(true);
     
-    if (!validateForm()) return;
-
     try {
-      let result;
+      // Use real authentication service
+      const result = await login(email, password);
       
-      if (isLoginMode) {
-        result = await login(formData.email, formData.password);
-      } else {
-        result = await register({
-          email: formData.email,
-          password: formData.password,
-          first_name: formData.firstName,
-          last_name: formData.lastName
-        });
-      }
-
       if (result.success) {
-        if (onSuccess) {
-          onSuccess();
+        console.log('Login successful');
+        
+        // Call the onLogin callback to update parent component
+        if (onLogin) {
+          onLogin();
         }
       } else {
-        setLocalError(result.error || 'An error occurred');
+        setError(result.message || 'Login failed. Please try again.');
       }
+      
     } catch (err) {
-      setLocalError('Network error. Please try again.');
+      console.error('Login error:', err);
+      setError('Login failed. Please try again.');
+      addError('Login failed. Please check your credentials and try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const toggleMode = () => {
-    setIsLoginMode(!isLoginMode);
-    setFormData({
-      email: '',
-      password: '',
-      confirmPassword: '',
-      firstName: '',
-      lastName: ''
-    });
-  };
-
-  const displayError = localError || error;
-
   return (
-    <div className="login-container">
+    <div className={`login-container ${theme}`}>
       <div className="login-card">
         <div className="login-header">
-          <h2>{isLoginMode ? 'Welcome Back' : 'Create Account'}</h2>
-          <p className="login-subtitle">
-            {isLoginMode 
-              ? 'Sign in to your WebSecPen account' 
-              : 'Join WebSecPen and start securing your applications'
-            }
-          </p>
+          <Logo size="large" showText={true} />
+          <p>Sign in to your security scanning dashboard</p>
         </div>
-
         <form onSubmit={handleSubmit} className="login-form">
-          {!isLoginMode && (
-            <div className="form-row">
-              <div className="form-group">
-                <input
-                  type="text"
-                  name="firstName"
-                  value={formData.firstName}
-                  onChange={handleInputChange}
-                  placeholder="First Name"
-                  className="form-input"
-                  required={!isLoginMode}
-                />
-              </div>
-              <div className="form-group">
-                <input
-                  type="text"
-                  name="lastName"
-                  value={formData.lastName}
-                  onChange={handleInputChange}
-                  placeholder="Last Name"
-                  className="form-input"
-                  required={!isLoginMode}
-                />
-              </div>
-            </div>
-          )}
-
           <div className="form-group">
             <input
               type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleInputChange}
-              placeholder="Email Address"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Email"
               className="form-input"
-              required
+              disabled={isLoading}
             />
           </div>
-
+          
           <div className="form-group">
-            <div className="password-input-container">
-              <input
-                type={showPassword ? 'text' : 'password'}
-                name="password"
-                value={formData.password}
-                onChange={handleInputChange}
-                placeholder="Password"
-                className="form-input"
-                required
-              />
-              <button
-                type="button"
-                className="password-toggle"
-                onClick={() => setShowPassword(!showPassword)}
-              >
-                {showPassword ? '👁️' : '👁️‍🗨️'}
-              </button>
-            </div>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Password"
+              className="form-input"
+              disabled={isLoading}
+            />
           </div>
-
-          {!isLoginMode && (
-            <div className="form-group">
-              <input
-                type="password"
-                name="confirmPassword"
-                value={formData.confirmPassword}
-                onChange={handleInputChange}
-                placeholder="Confirm Password"
-                className="form-input"
-                required={!isLoginMode}
-              />
-            </div>
-          )}
-
-          {isLoginMode && (
-            <div className="form-options">
-              <label className="remember-me">
-                <input type="checkbox" />
-                <span>Remember me</span>
-              </label>
-              <a href="#" className="forgot-password">Forgot password?</a>
-            </div>
-          )}
-
-          {displayError && (
-            <div className="error-message">
-              {displayError}
-            </div>
-          )}
-
-          <button
-            type="submit"
-            className="login-button"
-            disabled={isLoginLoading || isRegisterLoading}
+          
+          {error && <div className="error-message">{error}</div>}
+          
+          <button 
+            type="submit" 
+            className="login-button" 
+            disabled={isLoading}
           >
-            {isLoginLoading || isRegisterLoading ? (
-              <div className="loading-spinner">
-                <div className="spinner"></div>
-                {isLoginMode ? 'Signing in...' : 'Creating account...'}
-              </div>
-            ) : (
-              isLoginMode ? 'Sign In' : 'Create Account'
-            )}
+            {isLoading ? 'Logging in...' : 'Login'}
           </button>
+          
+          <div className="login-footer">
+            <a href="#" className="forgot-password">Forgot Password?</a>
+          </div>
         </form>
-
-        <div className="login-footer">
-          <p>
-            {isLoginMode ? "Don't have an account?" : "Already have an account?"}
-            <button
-              type="button"
-              className="mode-toggle"
-              onClick={toggleMode}
-            >
-              {isLoginMode ? 'Sign up' : 'Sign in'}
-            </button>
-          </p>
-        </div>
-
-        <div className="login-divider">
-          <span>or</span>
-        </div>
-
-        <div className="social-login">
-          <button className="social-button google">
-            <span className="social-icon">��</span>
-            Continue with Google
-          </button>
-          <button className="social-button github">
-            <span className="social-icon">🐙</span>
-            Continue with GitHub
-          </button>
-        </div>
       </div>
     </div>
   );
