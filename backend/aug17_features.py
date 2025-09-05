@@ -18,7 +18,6 @@ from flask import Flask, jsonify, request, Response
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 from flask_socketio import emit
 from models import db, User, Scan, AuditLog, TeamMember
-# from sklearn.linear_model import LogisticRegression  # Temporarily disabled
 import numpy as np
 
 # Redis client for priority queue and caching
@@ -313,9 +312,6 @@ def init_priority_queue_routes(app):
                 y = [1] * len(X)  # All positive samples for training
                 
                 if len(X) > 1:
-    # model = None  # LogisticRegression() temporarily disabled  # Temporarily disabled
-                    # model.fit(X, y)  # Temporarily disabled
-                    # scores = model.predict_proba(X)[:, 1]  # Temporarily disabled
                     scores = [0.5] * len(X)  # Default scores
                     scores = [1.0] * len(X)
                 

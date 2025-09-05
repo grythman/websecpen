@@ -1,6 +1,6 @@
 // src/components/Logo.jsx - Adaptive Logo Component
 import React, { useContext } from 'react';
-import { ThemeContext } from '../ThemeContext.jsx';
+import { ThemeContext } from '../context/ThemeContext.jsx';
 import './Logo.css';
 
 const Logo = ({ size = 'medium', showText = true, className = '' }) => {

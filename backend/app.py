@@ -24,7 +24,7 @@ from monitoring import performance_monitor, alert_manager
 from chat_service import initialize_chat_service
 from premium_features import init_premium_routes
 from advanced_features import init_advanced_routes
-from new_advanced_features import init_new_advanced_routes
+# Removed - merged into advanced_features
 from advanced_analytics import init_advanced_analytics, init_advanced_routes as init_analytics_routes
 from aug17_features import init_aug17_routes
 from aug18_features import init_aug18_routes
@@ -796,7 +796,7 @@ def handle_rate_limit_exceeded(e):
 # Initialize premium and advanced features
 init_premium_routes(app)
 init_advanced_routes(app)
-init_new_advanced_routes(app)
+# Removed - merged into advanced_features
 
 # Initialize advanced analytics and real-time features
 socketio = init_advanced_analytics(app)
@@ -828,23 +828,9 @@ except ImportError as e:
 # Initialize External Integrations
 try:
     from integrations_aug22_25 import init_all_integrations
-    # init_all_integrations(app)  # Temporarily disabled due to conflicts
 except ImportError as e:
     print(f"External integrations not available: {e}")
 
-# Initialize August 20-25 features
-try:
-    from aug20_25_features import init_aug20_25_routes
-    init_aug20_25_routes(app)
-except ImportError as e:
-    print(f"Aug 20-25 features not available: {e}")
-
-# Initialize External Integrations
-try:
-    from integrations_aug22_25 import init_all_integrations
-    # init_all_integrations(app)  # Temporarily disabled due to conflicts
-except ImportError as e:
-    print(f"External integrations not available: {e}")
 
 # Initialize August 24-29 features
 try:

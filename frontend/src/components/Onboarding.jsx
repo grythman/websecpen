@@ -1,10 +1,10 @@
 // src/components/Onboarding.jsx - Interactive User Onboarding Tour
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useError } from '../context/ErrorContext.jsx';
 import './Onboarding.css';
 
 const Onboarding = ({ onComplete }) => {
-  const { showSuccess } = useError();
+  const { addSuccess } = useError();
   const [currentStep, setCurrentStep] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
 
@@ -82,7 +82,7 @@ const Onboarding = ({ onComplete }) => {
   const handleComplete = () => {
     localStorage.setItem('websecpen_onboarding_completed', 'true');
     setIsVisible(false);
-    showSuccess('🎉 Welcome to WebSecPen! You\'re all set to start scanning for security vulnerabilities.');
+    addSuccess('🎉 Welcome to WebSecPen! You\'re all set to start scanning for security vulnerabilities.');
     if (onComplete) {
       onComplete();
     }

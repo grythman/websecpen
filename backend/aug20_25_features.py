@@ -20,8 +20,6 @@ from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Table, TableStyle
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib import colors
-# from pyotp import  # Temporarily disabled TOTP
-# import qrcode  # Temporarily disabled
 from prometheus_client import Counter, Histogram, generate_latest
 import time
 
@@ -841,7 +839,6 @@ def init_aug20_25_routes(app):
             print(f"Database initialization warning: {e}")
     
     # Initialize all feature routes
-    # init_annotation_routes(app)  # Temporarily disabled due to conflicts
     # init_monitoring_routes(app)  # Not implemented yet
     init_rbac_routes(app)
     init_export_routes(app)

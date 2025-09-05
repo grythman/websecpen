@@ -1,14 +1,12 @@
 // Enhanced WebSecPen Frontend Application - Full Integration
 import React, { useState, useEffect, useContext } from 'react';
+import { ErrorProvider } from './context/ErrorContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import { ThemeContext, ThemeProvider } from './ThemeContext';
+import { ThemeContext, ThemeProvider } from './context/ThemeContext';
 
-// Import existing components (зөвхөн байгаа components-ыг import хийх)
+// Import existing components
 import Dashboard from './components/Dashboard';
 import Login from './components/Login';
-import ScanForm from './components/ScanForm';
-import ScanHistory from './components/ScanHistory';
-import ResultPreview from './components/ResultPreview';
 import Profile from './components/Profile';
 import FeedbackForm from './components/FeedbackForm';
 import Onboarding from './components/Onboarding';
@@ -19,6 +17,7 @@ import Upgrade from './components/Upgrade';
 import StatsDashboard from './components/StatsDashboard';
 import ScheduleForm from './components/ScheduleForm';
 import ErrorDisplay from './components/ErrorDisplay';
+import ErrorBoundary from './components/ErrorBoundary';
 import Logo from './components/Logo';
 
 // Import enhanced components if available
@@ -45,453 +44,91 @@ import AiVulnerabilityPrioritizer from './components/AiVulnerabilityPrioritizer'
 
 import './App.css';
 
+// Error boundary for safe component rendering
+const SafeComponent = ({ component: Component, fallback = null, ...props }) => {
+  try {
+    return Component ? <Component {...props} /> : fallback;
+  } catch (error) {
+    console.error('Component rendering error:', error);
+    return <div className="error-fallback">Component failed to load</div>;
+  }
+};
+
 // Navigation component
 const Navigation = ({ currentView, setCurrentView, user, onLogout }) => {
   const { theme, toggleTheme } = useContext(ThemeContext);
-  
-  const navItems = [
-    { key: 'dashboard', label: 'Dashboard', icon: '📊' },
-    { key: 'scans', label: 'Security Scans', icon: '🔍' },
-    { key: 'vulnerabilities', label: 'Vulnerabilities', icon: '⚠️' },
-    { key: 'reports', label: 'Reports', icon: '📄' },
-    { key: 'analytics', label: 'Analytics', icon: '📈' },
-    { key: 'team', label: 'Team', icon: '👥' },
-    { key: 'profile', label: 'Profile', icon: '👤' },
+
+  const menuItems = [
+    { key: 'dashboard', label: 'Dashboard', icon: '📊', roles: ['user', 'admin'] },
+    { key: 'scans', label: 'Security Scans', icon: '🔍', roles: ['user', 'admin'] },
+    { key: 'vulnerabilities', label: 'Vulnerabilities', icon: '⚠️', roles: ['user', 'admin'] },
+    { key: 'reports', label: 'Reports', icon: '📄', roles: ['user', 'admin'] },
+    { key: 'team', label: 'Team', icon: '👥', roles: ['user', 'admin'] },
+    { key: 'profile', label: 'Profile', icon: '👤', roles: ['user', 'admin'] },
+    { key: 'admin', label: 'Admin', icon: '⚙️', roles: ['admin'] }
   ];
 
-  if (user?.role === 'admin') {
-    navItems.push({ key: 'admin', label: 'Admin', icon: '⚙️' });
-  }
+  const userRole = user?.role || 'user';
+  const filteredMenuItems = menuItems.filter(item => 
+    item.roles.includes(userRole)
+  );
 
   return (
-    <nav className={`main-navigation ${theme}`}>
+    <nav className="main-navigation">
       <div className="nav-brand">
-        <Logo size="medium" showText={true} />
+        <Logo />
+        <span className="brand-text">WebSecPen</span>
       </div>
       
       <div className="nav-menu">
-        {navItems.map(item => (
+        {filteredMenuItems.map(item => (
           <button
             key={item.key}
-            onClick={() => setCurrentView(item.key)}
             className={`nav-item ${currentView === item.key ? 'active' : ''}`}
+            onClick={() => setCurrentView(item.key)}
           >
             <span className="nav-icon">{item.icon}</span>
             <span className="nav-label">{item.label}</span>
           </button>
         ))}
       </div>
-      
+
       <div className="nav-actions">
-        <button className="theme-toggle" onClick={toggleTheme}>
-          {theme === 'light' ? '🌙' : '☀️'}
+        <button onClick={toggleTheme} className="theme-toggle">
+          {theme === 'dark' ? '☀️' : '🌙'}
         </button>
-        
-        <div className="user-menu">
-          <div className="user-avatar">
-            {user?.name?.charAt(0) || user?.email?.charAt(0) || 'U'}
-          </div>
-          <span className="user-name">{user?.name || user?.email}</span>
-          <button className="logout-btn" onClick={onLogout}>
-            Logout
-          </button>
-        </div>
+        <span className="user-info">
+          {user?.email || 'User'}
+        </span>
+        <button onClick={onLogout} className="logout-button">
+          Logout
+        </button>
       </div>
     </nav>
   );
 };
 
-// Safe component wrapper
-const SafeComponent = ({ component: Component, fallback, ...props }) => {
-  try {
-    return <Component {...props} />;
-  } catch (error) {
-    console.warn('Component render error:', error);
-    return fallback || <div className="error-display">Component not available</div>;
-  }
-};
-
-// Main dashboard view with tabs
-const DashboardView = () => {
-  const [activeTab, setActiveTab] = useState('overview');
-  const { user } = useAuth();
-
-  const tabs = [
-    { 
-      key: 'overview', 
-      label: 'Overview', 
-      component: <SafeComponent component={EnhancedDashboard} fallback={<Dashboard />} />
-    },
-    { 
-      key: 'stats', 
-      label: 'Statistics', 
-      component: <SafeComponent component={StatsDashboard} />
-    },
-    { 
-      key: 'trends', 
-      label: 'Trends', 
-      component: <SafeComponent component={Trends} />
-    },
-    { 
-      key: 'heatmap', 
-      label: 'Heatmap', 
-      component: <SafeComponent component={AdminHeatmap} />
-    },
-  ];
-
-  if (user?.role === 'admin') {
-    tabs.push({ 
-      key: 'admin', 
-      label: 'Admin Dashboard', 
-      component: <SafeComponent component={EnhancedAdminDashboard} fallback={<AdminDashboard />} />
-    });
-  }
-
-  return (
-    <div className="dashboard-view">
-      <div className="tab-navigation">
-        {tabs.map(tab => (
-          <button
-            key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
-            className={`tab-item ${activeTab === tab.key ? 'active' : ''}`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-      
-      <div className="tab-content">
-        {tabs.find(tab => tab.key === activeTab)?.component}
-      </div>
-    </div>
-  );
-};
-
-// Security scans view
-const SecurityScansView = () => {
-  const [activeTab, setActiveTab] = useState('new-scan');
-
-  const tabs = [
-    { 
-      key: 'new-scan', 
-      label: 'New Scan', 
-      component: <SafeComponent component={ScanForm} />
-    },
-    { 
-      key: 'custom-scan', 
-      label: 'Custom Scan', 
-      component: <SafeComponent component={CustomScanForm} fallback={<ScanForm />} />
-    },
-    { 
-      key: 'schedule', 
-      label: 'Schedule Scan', 
-      component: <SafeComponent component={ScheduleForm} />
-    },
-    { 
-      key: 'history', 
-      label: 'Scan History', 
-      component: <SafeComponent component={ScanHistory} />
-    },
-    { 
-      key: 'progress', 
-      label: 'Real-time Progress', 
-      component: <SafeComponent component={RealTimeScanProgress} />
-    },
-    { 
-      key: 'diff', 
-      label: 'Scan Comparison', 
-      component: <SafeComponent component={ScanDiff} />
-    },
-  ];
-
-  return (
-    <div className="security-scans-view">
-      <div className="tab-navigation">
-        {tabs.map(tab => (
-          <button
-            key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
-            className={`tab-item ${activeTab === tab.key ? 'active' : ''}`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-      
-      <div className="tab-content">
-        {tabs.find(tab => tab.key === activeTab)?.component}
-      </div>
-    </div>
-  );
-};
-
-// Vulnerabilities view
-const VulnerabilitiesView = () => {
-  const [activeTab, setActiveTab] = useState('trends');
-
-  const tabs = [
-    { 
-      key: 'trends', 
-      label: 'Vulnerability Trends', 
-      component: <SafeComponent component={VulnTrends} />
-    },
-    { 
-      key: 'prioritizer', 
-      label: 'AI Prioritizer', 
-      component: <SafeComponent component={AiVulnerabilityPrioritizer} />
-    },
-    { 
-      key: 'tag-manager', 
-      label: 'Tag Manager', 
-      component: <SafeComponent component={VulnerabilityTagManager} />
-    },
-    { 
-      key: 'annotations', 
-      label: 'Team Annotations', 
-      component: <SafeComponent component={TeamAnnotations} />
-    },
-  ];
-
-  return (
-    <div className="vulnerabilities-view">
-      <div className="tab-navigation">
-        {tabs.map(tab => (
-          <button
-            key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
-            className={`tab-item ${activeTab === tab.key ? 'active' : ''}`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-      
-      <div className="tab-content">
-        {tabs.find(tab => tab.key === activeTab)?.component}
-      </div>
-    </div>
-  );
-};
-
-// Reports view
-const ReportsView = () => {
-  const [activeTab, setActiveTab] = useState('templates');
-
-  const tabs = [
-    { 
-      key: 'templates', 
-      label: 'Report Templates', 
-      component: <SafeComponent component={ReportTemplate} />
-    },
-    { 
-      key: 'manager', 
-      label: 'Template Manager', 
-      component: <SafeComponent component={ReportTemplateManager} />
-    },
-    { 
-      key: 'preview', 
-      label: 'Result Preview', 
-      component: <SafeComponent component={ResultPreview} />
-    },
-  ];
-
-  return (
-    <div className="reports-view">
-      <div className="tab-navigation">
-        {tabs.map(tab => (
-          <button
-            key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
-            className={`tab-item ${activeTab === tab.key ? 'active' : ''}`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-      
-      <div className="tab-content">
-        {tabs.find(tab => tab.key === activeTab)?.component}
-      </div>
-    </div>
-  );
-};
-
-// Team view
-const TeamView = () => {
-  const [activeTab, setActiveTab] = useState('chat');
-
-  const tabs = [
-    { 
-      key: 'chat', 
-      label: 'Team Chat', 
-      component: <SafeComponent component={Chat} />
-    },
-    { 
-      key: 'annotations', 
-      label: 'Annotations', 
-      component: <SafeComponent component={TeamAnnotations} />
-    },
-    { 
-      key: 'referral', 
-      label: 'Referral Program', 
-      component: <SafeComponent component={Referral} />
-    },
-    { 
-      key: 'badges', 
-      label: 'Team Badges', 
-      component: <SafeComponent component={Badges} />
-    },
-  ];
-
-  return (
-    <div className="team-view">
-      <div className="tab-navigation">
-        {tabs.map(tab => (
-          <button
-            key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
-            className={`tab-item ${activeTab === tab.key ? 'active' : ''}`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-      
-      <div className="tab-content">
-        {tabs.find(tab => tab.key === activeTab)?.component}
-      </div>
-    </div>
-  );
-};
-
-// Profile view
-const ProfileView = () => {
-  const [activeTab, setActiveTab] = useState('profile');
-
-  const tabs = [
-    { 
-      key: 'profile', 
-      label: 'Profile Settings', 
-      component: <SafeComponent component={Profile} />
-    },
-    { 
-      key: 'mfa', 
-      label: 'MFA Setup', 
-      component: <SafeComponent component={MfaSetup} />
-    },
-    { 
-      key: 'notifications', 
-      label: 'Notifications', 
-      component: <SafeComponent component={NotificationSettings} />
-    },
-    { 
-      key: 'preferences', 
-      label: 'Preferences', 
-      component: <SafeComponent component={NotificationPreferences} />
-    },
-    { 
-      key: 'api-keys', 
-      label: 'API Keys', 
-      component: <SafeComponent component={ApiKeyManager} />
-    },
-    { 
-      key: 'upgrade', 
-      label: 'Upgrade Account', 
-      component: <SafeComponent component={Upgrade} />
-    },
-  ];
-
-  return (
-    <div className="profile-view">
-      <div className="tab-navigation">
-        {tabs.map(tab => (
-          <button
-            key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
-            className={`tab-item ${activeTab === tab.key ? 'active' : ''}`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-      
-      <div className="tab-content">
-        {tabs.find(tab => tab.key === activeTab)?.component}
-      </div>
-    </div>
-  );
-};
-
-// Admin view
-const AdminView = () => {
-  const [activeTab, setActiveTab] = useState('dashboard');
-
-  const tabs = [
-    { 
-      key: 'dashboard', 
-      label: 'Admin Dashboard', 
-      component: <SafeComponent component={AdminDashboard} />
-    },
-    { 
-      key: 'enhanced', 
-      label: 'Enhanced Dashboard', 
-      component: <SafeComponent component={EnhancedAdminDashboard} fallback={<AdminDashboard />} />
-    },
-    { 
-      key: 'feedback', 
-      label: 'User Feedback', 
-      component: <SafeComponent component={AdminFeedback} />
-    },
-    { 
-      key: 'heatmap', 
-      label: 'System Heatmap', 
-      component: <SafeComponent component={AdminHeatmap} />
-    },
-  ];
-
-  return (
-    <div className="admin-view">
-      <div className="tab-navigation">
-        {tabs.map(tab => (
-          <button
-            key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
-            className={`tab-item ${activeTab === tab.key ? 'active' : ''}`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-      
-      <div className="tab-content">
-        {tabs.find(tab => tab.key === activeTab)?.component}
-      </div>
-    </div>
-  );
-};
-
-// Main app content
-function AppContent() {
-  const { isAuthenticated, isLoading, user, logout } = useAuth();
+// Main App Content Component
+const AppContent = () => {
+  const { user, logout, isAuthenticated, isLoading } = useAuth();
   const [currentView, setCurrentView] = useState('dashboard');
   const [showOnboarding, setShowOnboarding] = useState(false);
-  const [error, setError] = useState(null);
 
-  // Check if user needs onboarding
+  // Show onboarding for new users
   useEffect(() => {
-    if (isAuthenticated && user && !user.hasSeenOnboarding) {
+    if (isAuthenticated && user && !user.preferences?.has_seen_tutorial) {
       setShowOnboarding(true);
     }
   }, [isAuthenticated, user]);
 
-  // Show loading
+  // Show loading screen while checking authentication
   if (isLoading) {
     return (
-      <div className="loading-screen">
-        <Logo size="large" showText={true} />
-        <div className="loading-spinner"></div>
-        <p>Loading WebSecPen...</p>
+      <div className="loading-container">
+        <div className="loading-spinner">
+          <div className="spinner"></div>
+          <p>Loading WebSecPen...</p>
+        </div>
       </div>
     );
   }
@@ -499,10 +136,8 @@ function AppContent() {
   // Show login if not authenticated
   if (!isAuthenticated) {
     return (
-      <div className="auth-screen">
+      <div className="auth-container">
         <Login onSuccess={() => setCurrentView('dashboard')} />
-        {/* Also show TwoFactorAuth if needed */}
-        <SafeComponent component={TwoFactorAuth} />
       </div>
     );
   }
@@ -510,15 +145,101 @@ function AppContent() {
   // Show onboarding for new users
   if (showOnboarding) {
     return (
-      <Onboarding onComplete={() => setShowOnboarding(false)} />
+      <Onboarding 
+        onComplete={() => {
+          setShowOnboarding(false);
+          setCurrentView('dashboard');
+        }}
+      />
     );
   }
 
-  // Main application
+  // Dashboard View Component
+  const DashboardView = ({ user }) => (
+    <div className="dashboard-container">
+      <SafeComponent component={EnhancedDashboard} user={user} />
+      <SafeComponent component={StatsDashboard} user={user} />
+    </div>
+  );
+
+  // Scans View Component
+  const ScansView = () => (
+    <div className="scans-container">
+      <SafeComponent component={CustomScanForm} />
+      <SafeComponent component={RealTimeScanProgress} />
+    </div>
+  );
+
+  // Vulnerabilities View Component
+  const VulnerabilitiesView = () => (
+    <div className="vulnerabilities-container">
+      <SafeComponent component={VulnTrends} />
+      <SafeComponent component={AiVulnerabilityPrioritizer} />
+    </div>
+  );
+
+  // Reports View Component
+  const ReportsView = () => (
+    <div className="reports-container">
+      <SafeComponent component={ReportTemplate} />
+      <SafeComponent component={ReportTemplateManager} />
+    </div>
+  );
+
+  // Team View Component
+  const TeamView = () => (
+    <div className="team-container">
+      <SafeComponent component={TeamAnnotations} />
+    </div>
+  );
+
+  // Profile View Component
+  const ProfileView = () => (
+    <div className="profile-container">
+      <SafeComponent component={Profile} user={user} />
+      <SafeComponent component={MfaSetup} />
+      <SafeComponent component={TwoFactorAuth} />
+      <SafeComponent component={NotificationSettings} />
+      <SafeComponent component={NotificationPreferences} />
+      <SafeComponent component={ApiKeyManager} />
+    </div>
+  );
+
+  // Admin View Component
+  const AdminView = () => (
+    <div className="admin-container">
+      <SafeComponent component={EnhancedAdminDashboard} />
+      <SafeComponent component={AdminDashboard} />
+      <SafeComponent component={AdminFeedback} />
+      <SafeComponent component={AdminHeatmap} />
+      <SafeComponent component={VulnerabilityTagManager} />
+    </div>
+  );
+
+  // Render current view
+  const renderCurrentView = () => {
+    switch (currentView) {
+      case 'dashboard':
+        return <DashboardView user={user} />;
+      case 'scans':
+        return <ScansView />;
+      case 'vulnerabilities':
+        return <VulnerabilitiesView />;
+      case 'reports':
+        return <ReportsView />;
+      case 'team':
+        return <TeamView />;
+      case 'profile':
+        return <ProfileView />;
+      case 'admin':
+        return user?.role === 'admin' ? <AdminView /> : <DashboardView user={user} />;
+      default:
+        return <DashboardView user={user} />;
+    }
+  };
+
   return (
     <div className="app-container">
-      {error && <ErrorDisplay error={error} onDismiss={() => setError(null)} />}
-      
       <Navigation 
         currentView={currentView}
         setCurrentView={setCurrentView}
@@ -527,31 +248,28 @@ function AppContent() {
       />
       
       <main className="main-content">
-        {currentView === 'dashboard' && <DashboardView />}
-        {currentView === 'scans' && <SecurityScansView />}
-        {currentView === 'vulnerabilities' && <VulnerabilitiesView />}
-        {currentView === 'reports' && <ReportsView />}
-        {currentView === 'analytics' && <SafeComponent component={StatsDashboard} />}
-        {currentView === 'team' && <TeamView />}
-        {currentView === 'profile' && <ProfileView />}
-        {currentView === 'admin' && user?.role === 'admin' && <AdminView />}
+        {renderCurrentView()}
       </main>
       
-      {/* Global components */}
       <SafeComponent component={FeedbackForm} />
     </div>
   );
-}
+};
 
-// Main App wrapper with all providers
-function App() {
+// Main App Component with Providers
+const App = () => {
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <AppContent />
-      </AuthProvider>
-    </ThemeProvider>
+    <ErrorProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <ErrorDisplay />
+          <ErrorBoundary>
+            <AppContent />
+          </ErrorBoundary>
+        </AuthProvider>
+      </ThemeProvider>
+    </ErrorProvider>
   );
-}
+};
 
 export default App;

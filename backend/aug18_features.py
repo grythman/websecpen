@@ -4,8 +4,6 @@
 import os
 import io
 import json
-# # import pyotp  # Temporarily disabled  # Temporarily disabled
-# import qrcode  # Temporarily disabled
 import requests
 import secrets
 from datetime import datetime, timedelta
@@ -462,7 +460,6 @@ def init_mfa_routes(app):
         
         try:
             # For now, simulate MFA setup with Redis
-            secret = "temp_secret_123"  # Temporarily disabled
             
             # Generate QR code data
             totp = None  # pyotp temporarily disabled

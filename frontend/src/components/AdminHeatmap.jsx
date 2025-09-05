@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Chart as ChartJS, CategoryScale, LinearScale, Title, Tooltip, Legend } from 'chart.js';
-import { Matrix } from 'chartjs-chart-matrix';
 import './AdminHeatmap.css';
 
 ChartJS.register(CategoryScale, LinearScale, Title, Tooltip, Legend);

@@ -8,7 +8,7 @@ import './Chat.css';
 
 const Chat = ({ isOpen, onToggle }) => {
   const { t } = useTranslation();
-  const { showError, showSuccess } = useError();
+  const { addError, addSuccess } = useError();
   const { theme } = React.useContext(ThemeContext);
   
   const [socket, setSocket] = useState(null);
@@ -38,7 +38,7 @@ const Chat = ({ isOpen, onToggle }) => {
     if (isOpen && !socket) {
       const token = localStorage.getItem('token');
       if (!token) {
-        showError('Please log in to use chat support');
+        addError('Please log in to use chat support');
         return;
       }
       
@@ -53,18 +53,18 @@ const Chat = ({ isOpen, onToggle }) => {
         setIsConnected(true);
         setConnectionStatus('connected');
         setSocket(newSocket);
-        showSuccess(t('chat_connected'));
+        addSuccess(t('chat_connected'));
       });
       
       newSocket.on('disconnect', () => {
         setIsConnected(false);
         setConnectionStatus('disconnected');
-        showError(t('chat_disconnected'));
+        addError(t('chat_disconnected'));
       });
       
       newSocket.on('connect_error', (error) => {
         setConnectionStatus('error');
-        showError(`Chat connection failed: ${error.message}`);
+        addError(`Chat connection failed: ${error.message}`);
       });
       
       newSocket.on('welcome', (data) => {
@@ -95,7 +95,7 @@ const Chat = ({ isOpen, onToggle }) => {
         
         // Show notification for admin messages
         if (message.is_admin && message.user_id !== getCurrentUserId()) {
-          showSuccess('New message from support');
+          addSuccess('New message from support');
         }
       });
       
@@ -106,12 +106,12 @@ const Chat = ({ isOpen, onToggle }) => {
           isBroadcast: true
         };
         setMessages(prev => [...prev, broadcastMessage]);
-        showSuccess('Announcement from support team');
+        addSuccess('Announcement from support team');
       });
       
       newSocket.on('admin_direct_message', (data) => {
         setMessages(prev => [...prev, data.message]);
-        showSuccess('Direct message from support');
+        addSuccess('Direct message from support');
       });
       
       newSocket.on('user_typing', (data) => {
@@ -129,7 +129,7 @@ const Chat = ({ isOpen, onToggle }) => {
       });
       
       newSocket.on('error', (data) => {
-        showError(data.message || 'Chat error occurred');
+        addError(data.message || 'Chat error occurred');
       });
       
       // Cleanup
@@ -146,7 +146,7 @@ const Chat = ({ isOpen, onToggle }) => {
         clearTimeout(typingTimeoutRef.current);
       }
     };
-  }, [isOpen, socket, showError, showSuccess, t]);
+  }, [isOpen, socket, addError, addSuccess, t]);
   
   // Get current user ID from token
   const getCurrentUserId = () => {

@@ -75,6 +75,41 @@
   background: rgba(255, 255, 255, 0.2);
 }
 
+/* Warning notification styling */
+.warning-notification {
+  background: rgba(245, 158, 11, 0.95);
+  border-color: rgba(217, 119, 6, 0.3);
+  color: white;
+}
+
+.warning-notification .notification-close:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Info notification styling */
+.info-notification {
+  background: rgba(59, 130, 246, 0.95);
+  border-color: rgba(37, 99, 235, 0.3);
+  color: white;
+}
+
+.info-notification .notification-close:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Critical notification styling */
+.critical-notification {
+  background: rgba(185, 28, 28, 0.95);
+  border-color: rgba(153, 27, 27, 0.3);
+  color: white;
+  border-width: 2px;
+  animation: pulse 2s infinite;
+}
+
+.critical-notification .notification-close:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
 /* Dark theme adjustments */
 [data-theme="dark"] .notification {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
@@ -90,6 +125,21 @@
   border-color: rgba(22, 101, 52, 0.4);
 }
 
+[data-theme="dark"] .warning-notification {
+  background: rgba(180, 83, 9, 0.95);
+  border-color: rgba(146, 64, 14, 0.4);
+}
+
+[data-theme="dark"] .info-notification {
+  background: rgba(30, 64, 175, 0.95);
+  border-color: rgba(30, 58, 138, 0.4);
+}
+
+[data-theme="dark"] .critical-notification {
+  background: rgba(127, 29, 29, 0.95);
+  border-color: rgba(153, 27, 27, 0.6);
+}
+
 /* Animations */
 @keyframes slideIn {
   from {
@@ -99,6 +149,15 @@
   to {
     transform: translateX(0);
     opacity: 1;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
   }
 }
 
@@ -137,4 +196,4 @@
     right: 5px;
     left: 5px;
   }
-} 
+}

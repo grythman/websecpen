@@ -12,9 +12,7 @@ if (sentryDsn) {
     dsn: sentryDsn,
     environment: import.meta.env.MODE,
     tracesSampleRate: 1.0,
-    integrations: [
-      new Sentry.BrowserTracing(),
-    ],
+    integrations: [],
   });
 }
 
