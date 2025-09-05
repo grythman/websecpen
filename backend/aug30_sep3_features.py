@@ -19,7 +19,7 @@ from flask import Flask, jsonify, request, Response
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt, create_access_token
 from flask_socketio import emit
 from sqlalchemy import and_, or_
-from pyotp import TOTP, random_base32
+# from pyotp import  # Temporarily disabled TOTP, random_base32
 from werkzeug.security import check_password_hash
 from botocore.exceptions import ClientError
 

@@ -430,6 +430,8 @@ class Schedule(db.Model):
 
 def init_db(app):
     """Initialize database with sample data"""
+    db.init_app(app)
+    """Initialize database with sample data"""
     with app.app_context():
         db.create_all()
         

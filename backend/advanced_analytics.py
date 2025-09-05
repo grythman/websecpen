@@ -56,7 +56,7 @@ def get_scan_trends():
         }
 
 
-def init_advanced_analytics():
+def init_advanced_analytics(app=None):
     """Initialize advanced analytics service"""
     try:
         print('✅ Advanced analytics service initialized')

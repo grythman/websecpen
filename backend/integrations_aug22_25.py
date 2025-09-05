@@ -22,7 +22,7 @@ def init_servicenow_integration(app):
     
     @app.route('/api/scan/<int:scan_id>/servicenow', methods=['POST'])
     @jwt_required()
-    def create_servicenow_incident(scan_id):
+    def create_servicenow_incident_integration(scan_id):
         """Create ServiceNow incidents for high-severity vulnerabilities"""
         user_id = get_jwt_identity()
         
@@ -173,7 +173,7 @@ def init_pagerduty_integration(app):
     
     @app.route('/api/scan/<int:scan_id>/pagerduty', methods=['POST'])
     @jwt_required()
-    def create_pagerduty_incident(scan_id):
+    def create_pagerduty_incident_integration(scan_id):
         """Create PagerDuty incidents for critical vulnerabilities"""
         user_id = get_jwt_identity()
         

@@ -85,7 +85,7 @@ def init_feedback_routes(app):
     
     @app.route('/api/feedback', methods=['POST'])
     @jwt_required()
-    def submit_feedback():
+    def submit_feedback_aug17():
         """Submit user feedback"""
         user_id = get_jwt_identity()
         data = request.get_json()

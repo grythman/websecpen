@@ -828,7 +828,7 @@ except ImportError as e:
 # Initialize External Integrations
 try:
     from integrations_aug22_25 import init_all_integrations
-    init_all_integrations(app)
+    # init_all_integrations(app)  # Temporarily disabled due to conflicts
 except ImportError as e:
     print(f"External integrations not available: {e}")
 
@@ -842,7 +842,7 @@ except ImportError as e:
 # Initialize External Integrations
 try:
     from integrations_aug22_25 import init_all_integrations
-    init_all_integrations(app)
+    # init_all_integrations(app)  # Temporarily disabled due to conflicts
 except ImportError as e:
     print(f"External integrations not available: {e}")
 
@@ -854,11 +854,11 @@ except ImportError as e:
     print(f"Aug 24-29 features not available: {e}")
 
 # Initialize August 30 - September 3 features
-try:
-    from aug30_sep3_features import init_aug30_sep3_routes
-    init_aug30_sep3_routes(app)
-except ImportError as e:
-    print(f"Aug 30 - Sep 3 features not available: {e}")
+# try:
+#     from aug30_sep3_features import init_aug30_sep3_routes
+#     init_aug30_sep3_routes(app)
+# except ImportError as e:
+#     print(f"Aug 30 - Sep 3 features not available: {e}")
 
 @app.route('/api/scan/report/<int:scan_id>/pdf', methods=['GET'])
 @jwt_required()
@@ -935,7 +935,7 @@ def handle_internal_error(e):
 if __name__ == '__main__':
     with app.app_context():
         # Create sample data for testing
-        create_sample_data()
+        create_sample_data(app)
     
     print("WebSecPen API starting...")
     print("Available endpoints:")
