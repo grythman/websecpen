@@ -938,3 +938,25 @@ if __name__ == '__main__':
     print("- test@example.com / test123 (user)")
     
     app.run(debug=True, host='0.0.0.0', port=5000)
+
+# Add Socket.io endpoint
+@app.route('/socket.io/')
+def socketio_endpoint():
+    return jsonify({'message': 'Socket.io endpoint'}), 200
+
+if __name__ == '__main__':
+    print("WebSecPen API starting...")
+    print("Available endpoints:")
+    print("- POST /auth/login - User login")
+    print("- POST /auth/register - User registration")
+    print("- GET /auth/profile - Get user profile")
+    print("- POST /scan/start - Start new scan")
+    print("- GET /scan/result/<id> - Get scan results")
+    print("- GET /scan/status/<id> - Get scan status")
+    print("- GET /scans - Get all user scans")
+    print("- GET /health - Health check")
+    print("\nDefault users:")
+    print("- admin@websecpen.com / admin123 (admin)")
+    print("- test@example.com / test123 (user)")
+    
+    app.run(debug=True, host='0.0.0.0', port=5000)
