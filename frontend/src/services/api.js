@@ -2,7 +2,7 @@
 // Enhanced integration with all backend endpoints
 
 // Use relative URLs in development to work with Vite proxy
-const API_BASE_URL = import.meta.env.MODE === 'production' ? 'http://localhost:5000' : '';
+const API_BASE_URL = import.meta.env.PROD ? 'http://localhost:5000' : '';
 
 class ApiService {
   constructor() {
@@ -24,38 +24,38 @@ class ApiService {
     console.log('Token removed');
   }
     // Initialize auth state from localStorage
-  async initializeAuth() {
-    try {
-      const storedToken = localStorage.getItem('auth_token');
-      const storedUser = localStorage.getItem('user');
-      
-      if (storedToken && storedUser) {
-        this.token = storedToken;
-        this.user = JSON.parse(storedUser);
-        apiService.setToken(storedToken);
+    async initializeAuth() {
+      try {
+        const storedToken = localStorage.getItem('auth_token');
+        const storedUser = localStorage.getItem('user');
         
-        // Verify token is still valid
-        try {
-          const response = await apiService.getProfile();
-          // The backend returns {user: userObject}, so we need to extract the user
-          this.user = response.user;
-          localStorage.setItem('user', JSON.stringify(this.user));
-          this.notifyListeners();
-          return true;
-        } catch (error) {
-          console.warn('Token validation failed, logging out');
-          await this.logout();
-          return false;
+        if (storedToken && storedUser) {
+          this.token = storedToken;
+          this.user = JSON.parse(storedUser);
+          apiService.setToken(storedToken);
+          
+          // Verify token is still valid
+          try {
+            const response = await apiService.getProfile();
+            // The backend returns {user: userObject}, so we need to extract the user
+            this.user = response.user;
+            localStorage.setItem('user', JSON.stringify(this.user));
+            this.notifyListeners();
+            return true;
+          } catch (error) {
+            console.warn('Token validation failed, logging out');
+            await this.logout();
+            return false;
+          }
         }
+        
+        return false;
+      } catch (error) {
+        console.error('Auth initialization failed:', error);
+        await this.logout();
+        return false;
       }
-      
-      return false;
-    } catch (error) {
-      console.error('Auth initialization failed:', error);
-      await this.logout();
-      return false;
     }
-  }
   // Generic request method
   async request(endpoint, options = {}) {
     // For development, use /api prefix to work with Vite proxy
