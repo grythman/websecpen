@@ -6,7 +6,7 @@ import { useError } from '../context/ErrorContext.jsx';
 import Logo from './Logo.jsx';
 import './Login.css';
 
-const Login = ({ onLogin }) => {
+const Login = ({ onSuccess }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -50,8 +50,8 @@ const Login = ({ onLogin }) => {
         console.log('Login successful');
         
         // Call the onLogin callback to update parent component
-        if (onLogin) {
-          onLogin();
+        if (onSuccess) {
+          onSuccess();
         }
       } else {
         setError(result.message || 'Login failed. Please try again.');

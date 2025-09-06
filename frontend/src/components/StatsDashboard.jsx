@@ -21,6 +21,7 @@ import { Bar, Doughnut, Line } from 'react-chartjs-2';
 import apiService from '../services/api.js';
 import AdminGuard from './AdminGuard.jsx';
 import './AdminGuard.css';
+import './AdminGuard.css';
 import './StatsDashboard.css';
 
 // Register Chart.js components
