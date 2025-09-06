@@ -36,7 +36,7 @@ const ReportTemplateManager = ({ scanId, onClose }) => {
   const fetchTemplates = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('auth_token');
       const response = await fetch('/api/report/templates', {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -64,7 +64,7 @@ const ReportTemplateManager = ({ scanId, onClose }) => {
     }
 
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('auth_token');
       const response = await fetch('/api/report/templates', {
         method: 'POST',
         headers: {
@@ -106,7 +106,7 @@ const ReportTemplateManager = ({ scanId, onClose }) => {
     }
 
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('auth_token');
       const response = await fetch(`/api/scan/${scanId}/report/custom/${templateId}`, {
         headers: {
           'Authorization': `Bearer ${token}`

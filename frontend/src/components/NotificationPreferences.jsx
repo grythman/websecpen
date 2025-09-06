@@ -20,7 +20,7 @@ const NotificationPreferences = () => {
   const fetchSettings = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('auth_token');
       const response = await fetch('/api/notification/settings', {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -47,7 +47,7 @@ const NotificationPreferences = () => {
     setMessage('');
     
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('auth_token');
       const response = await fetch('/api/notification/settings', {
         method: 'PUT',
         headers: {

@@ -44,7 +44,7 @@ export const requestNotificationPermission = async () => {
         const response = await fetch('/api/notifications/register', {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({ token }),
@@ -74,7 +74,7 @@ export const disableNotifications = async () => {
     const response = await fetch('/api/notifications/unregister', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
       },
     });
 
@@ -95,7 +95,7 @@ export const sendTestNotification = async () => {
     const response = await fetch('/api/notifications/test', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
       },
     });
 

@@ -13,22 +13,42 @@ const Dashboard = () => {
   });
 
   const [recentScans, setRecentScans] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Mock data for demonstration
-    setStats({
-      totalScans: 12,
-      vulnerabilities: 8,
-      highRisk: 3,
-      lastScan: '2 hours ago'
-    });
+    // Simulate loading
+    const timer = setTimeout(() => {
+      // Mock data for demonstration
+      setStats({
+        totalScans: 12,
+        vulnerabilities: 8,
+        highRisk: 3,
+        lastScan: '2 hours ago'
+      });
 
-    setRecentScans([
-      { id: 1, target: 'example.com', status: 'Completed', vulnerabilities: 2, date: '2025-09-06' },
-      { id: 2, target: 'test.com', status: 'In Progress', vulnerabilities: 0, date: '2025-09-06' },
-      { id: 3, target: 'demo.com', status: 'Completed', vulnerabilities: 5, date: '2025-09-05' }
-    ]);
+      setRecentScans([
+        { id: 1, target: 'example.com', status: 'Completed', vulnerabilities: 2, date: '2025-09-06' },
+        { id: 2, target: 'test.com', status: 'In Progress', vulnerabilities: 0, date: '2025-09-06' },
+        { id: 3, target: 'demo.com', status: 'Completed', vulnerabilities: 5, date: '2025-09-05' },
+        { id: 4, target: 'sample.com', status: 'Completed', vulnerabilities: 1, date: '2025-09-05' }
+      ]);
+      
+      setIsLoading(false);
+    }, 1000);
+
+    return () => clearTimeout(timer);
   }, []);
+
+  if (isLoading) {
+    return (
+      <div className="dashboard">
+        <div className="loading-container">
+          <div className="loading-spinner"></div>
+          <p>Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="dashboard">
@@ -163,6 +183,10 @@ const Dashboard = () => {
                   <div className="status-dot success"></div>
                   <span>Database Connected</span>
                 </div>
+                <div className="status-indicator">
+                  <div className="status-dot active"></div>
+                  <span>API Connected</span>
+                </div>
               </div>
             </div>
           </div>
@@ -193,6 +217,20 @@ const Dashboard = () => {
                   <div className="activity-content">
                     <p>Completed scan of demo.com</p>
                     <span>1 day ago</span>
+                  </div>
+                </div>
+                <div className="activity-item">
+                  <div className="activity-icon">🔧</div>
+                  <div className="activity-content">
+                    <p>Updated security policies</p>
+                    <span>2 days ago</span>
+                  </div>
+                </div>
+                <div className="activity-item">
+                  <div className="activity-icon">🔐</div>
+                  <div className="activity-content">
+                    <p>User logged in successfully</p>
+                    <span>Just now</span>
                   </div>
                 </div>
               </div>

@@ -21,7 +21,7 @@ const Badges = () => {
 
   const fetchBadges = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('auth_token');
       
       // Fetch user badges
       const badgesResponse = await fetch('/api/badges', {

@@ -36,7 +36,7 @@ const Chat = ({ isOpen, onToggle }) => {
   // Initialize socket connection
   useEffect(() => {
     if (isOpen && !socket) {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('auth_token');
       if (!token) {
         addError('Please log in to use chat support');
         return;
@@ -150,7 +150,7 @@ const Chat = ({ isOpen, onToggle }) => {
   
   // Get current user ID from token
   const getCurrentUserId = () => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('auth_token');
     if (!token) return null;
     
     try {

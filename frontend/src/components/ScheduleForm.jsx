@@ -22,7 +22,7 @@ const ScheduleForm = () => {
 
   const fetchSchedules = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('auth_token');
       const response = await fetch('/api/schedule', {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -45,7 +45,7 @@ const ScheduleForm = () => {
     setMessage('');
 
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('auth_token');
       const url = editingSchedule ? `/api/schedule/${editingSchedule.id}` : '/api/schedule';
       const method = editingSchedule ? 'PUT' : 'POST';
 
@@ -101,7 +101,7 @@ const ScheduleForm = () => {
     }
 
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('auth_token');
       const response = await fetch(`/api/schedule/${scheduleId}`, {
         method: 'DELETE',
         headers: {
@@ -125,7 +125,7 @@ const ScheduleForm = () => {
 
   const toggleSchedule = async (schedule) => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('auth_token');
       const response = await fetch(`/api/schedule/${schedule.id}`, {
         method: 'PUT',
         headers: {

@@ -18,7 +18,7 @@ const AdminHeatmap = () => {
   const fetchHeatmapData = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('auth_token');
       const response = await fetch(`/api/admin/heatmap?days=${selectedDays}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -39,7 +39,7 @@ const AdminHeatmap = () => {
 
   const fetchEndpointAnalytics = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('auth_token');
       const response = await fetch(`/api/admin/analytics/endpoints?days=${selectedDays}`, {
         headers: {
           'Authorization': `Bearer ${token}`,

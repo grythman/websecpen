@@ -44,7 +44,7 @@ const RealTimeScanProgress = ({ scanId, onComplete }) => {
 
   const fetchProgress = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('auth_token');
       const response = await fetch(`/api/scan/${scanId}/progress`, {
         headers: {
           'Authorization': `Bearer ${token}`,

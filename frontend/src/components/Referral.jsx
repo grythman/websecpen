@@ -15,7 +15,7 @@ const Referral = () => {
 
   const fetchReferrals = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('auth_token');
       const response = await fetch('/api/referral/list', {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -40,7 +40,7 @@ const Referral = () => {
     setMessage('');
 
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('auth_token');
       const response = await fetch('/api/referral/create', {
         method: 'POST',
         headers: {

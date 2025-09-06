@@ -34,7 +34,7 @@ const EnhancedAdminDashboard = () => {
 
   const fetchUsers = async (page = 1) => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('auth_token');
       const response = await fetch(`/api/admin/users?page=${page}&per_page=20`, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -62,7 +62,7 @@ const EnhancedAdminDashboard = () => {
   const fetchAuditLogs = async (page = 1) => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('auth_token');
       const response = await fetch(`/api/admin/audit-logs?page=${page}&per_page=50`, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -92,7 +92,7 @@ const EnhancedAdminDashboard = () => {
   const fetchFeedbackAnalysis = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('auth_token');
       const response = await fetch('/api/admin/feedback/analyze', {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -118,7 +118,7 @@ const EnhancedAdminDashboard = () => {
   const fetchSnykResults = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('auth_token');
       const response = await fetch('/api/admin/snyk-results', {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -148,7 +148,7 @@ const EnhancedAdminDashboard = () => {
     }
 
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('auth_token');
       const response = await fetch(`/api/admin/user/${userId}/${action}`, {
         method: 'POST',
         headers: {

@@ -26,7 +26,7 @@ const AdminDashboard = () => {
     try {
       const response = await fetch('/api/admin/snyk-results', {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
         },
       });
 
@@ -48,7 +48,7 @@ const AdminDashboard = () => {
     try {
       const response = await fetch('/api/admin/feedback/analyze', {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
         },
       });
 
@@ -69,7 +69,7 @@ const AdminDashboard = () => {
     try {
       const response = await fetch('/api/admin/feedback/summary', {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
         },
       });
 
@@ -88,7 +88,7 @@ const AdminDashboard = () => {
       const response = await fetch('/api/scan/snyk', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ project_path: './frontend' }),

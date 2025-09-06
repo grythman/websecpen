@@ -17,7 +17,7 @@ const ScanDiff = ({ scanId, onClose }) => {
   const fetchDiffData = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('auth_token');
       const response = await fetch(`/api/scan/${scanId}/diff`, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -40,7 +40,7 @@ const ScanDiff = ({ scanId, onClose }) => {
 
   const fetchDiffSummary = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('auth_token');
       const response = await fetch(`/api/scan/${scanId}/diff/summary`, {
         headers: {
           'Authorization': `Bearer ${token}`,

@@ -26,7 +26,7 @@ const Profile = () => {
 
   const fetchProfile = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('auth_token');
       const response = await fetch('/api/profile', {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -76,7 +76,7 @@ const Profile = () => {
     setMessage('');
 
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('auth_token');
       const formData = new FormData();
 
       // Add avatar if selected

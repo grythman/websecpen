@@ -1,7 +1,8 @@
 // WebSecPen API Service
 // Enhanced integration with all backend endpoints
 
-const API_BASE_URL = 'http://localhost:5000';
+// Use relative URLs in development to work with Vite proxy
+const API_BASE_URL = import.meta.env.MODE === 'production' ? 'http://localhost:5000' : '';
 
 class ApiService {
   constructor() {
@@ -13,17 +14,52 @@ class ApiService {
   setToken(token) {
     this.token = token;
     localStorage.setItem('auth_token', token);
+    console.log('Token set:', token ? 'Token present' : 'No token');
   }
 
   // Remove authentication token
   removeToken() {
     this.token = null;
     localStorage.removeItem('auth_token');
+    console.log('Token removed');
   }
-
+    // Initialize auth state from localStorage
+  async initializeAuth() {
+    try {
+      const storedToken = localStorage.getItem('auth_token');
+      const storedUser = localStorage.getItem('user');
+      
+      if (storedToken && storedUser) {
+        this.token = storedToken;
+        this.user = JSON.parse(storedUser);
+        apiService.setToken(storedToken);
+        
+        // Verify token is still valid
+        try {
+          const response = await apiService.getProfile();
+          // The backend returns {user: userObject}, so we need to extract the user
+          this.user = response.user;
+          localStorage.setItem('user', JSON.stringify(this.user));
+          this.notifyListeners();
+          return true;
+        } catch (error) {
+          console.warn('Token validation failed, logging out');
+          await this.logout();
+          return false;
+        }
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('Auth initialization failed:', error);
+      await this.logout();
+      return false;
+    }
+  }
   // Generic request method
   async request(endpoint, options = {}) {
-    const url = `${this.baseURL}${endpoint}`;
+    // For development, use /api prefix to work with Vite proxy
+    const url = API_BASE_URL ? `${this.baseURL}${endpoint}` : `/api${endpoint}`;
     const config = {
       headers: {
         'Content-Type': 'application/json',
@@ -35,6 +71,9 @@ class ApiService {
     // Add authorization header if token exists
     if (this.token) {
       config.headers.Authorization = `Bearer ${this.token}`;
+      console.log('Request with token to:', url);
+    } else {
+      console.log('Request without token to:', url);
     }
 
     try {
@@ -42,6 +81,7 @@ class ApiService {
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
+        console.error('API Error:', response.status, errorData);
         throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
       }
 
@@ -84,8 +124,27 @@ class ApiService {
 
   // Health check
   async getHealth() {
-    const response = await fetch(`${this.baseURL}/health`);
-    return await response.json();
+    return await this.request('/health');
+  }
+
+  // Scan endpoints
+  async startScan(scanData) {
+    return await this.request('/scan/start', {
+      method: 'POST',
+      body: JSON.stringify(scanData),
+    });
+  }
+
+  async getScanStatus(scanId) {
+    return await this.request(`/scan/status/${scanId}`);
+  }
+
+  async getScanResult(scanId) {
+    return await this.request(`/scan/result/${scanId}`);
+  }
+
+  async getScans() {
+    return await this.request('/scans');
   }
 
   // Mock endpoints for missing functionality

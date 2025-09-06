@@ -44,7 +44,7 @@ const FeedbackForm = ({ onSubmitSuccess }) => {
     setMessage('');
 
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('auth_token');
       const response = await fetch('/api/feedback', {
         method: 'POST',
         headers: {

@@ -95,7 +95,7 @@ def login():
             db.session.commit()
             
             # Create JWT token
-            access_token = create_access_token(identity=user.id)
+            access_token = create_access_token(identity=str(user.id))
             
             return jsonify({
                 'access_token': access_token,
@@ -142,7 +142,7 @@ def register():
         db.session.commit()
         
         # Create JWT token
-        access_token = create_access_token(identity=user.id)
+        access_token = create_access_token(identity=str(user.id))
         
         return jsonify({
             'access_token': access_token,
@@ -960,3 +960,17 @@ if __name__ == '__main__':
     print("- test@example.com / test123 (user)")
     
     app.run(debug=True, host='0.0.0.0', port=5000)
+
+# JWT Error Handlers
+@jwt.expired_token_loader
+def expired_token_callback(jwt_header, jwt_payload):
+    return jsonify({'error': 'Token has expired'}), 401
+
+@jwt.invalid_token_loader
+def invalid_token_callback(error):
+    return jsonify({'error': f'Invalid token: {error}'}), 401
+
+@jwt.unauthorized_loader
+def missing_token_callback(error):
+    return jsonify({'error': f'Missing token: {error}'}), 401
+

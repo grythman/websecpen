@@ -28,7 +28,7 @@ const CustomScanForm = ({ onScanStart }) => {
 
   const fetchPresets = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('auth_token');
       const response = await fetch('/api/scan/presets', {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -84,7 +84,7 @@ const CustomScanForm = ({ onScanStart }) => {
         exclusion_patterns: parsedPatterns
       };
 
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('auth_token');
       const response = await fetch('/api/scan/start', {
         method: 'POST',
         headers: {

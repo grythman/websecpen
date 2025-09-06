@@ -20,7 +20,7 @@ const ApiKeyManager = () => {
   const fetchApiKeys = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('auth_token');
       const response = await fetch('/api/apikey', {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -52,7 +52,7 @@ const ApiKeyManager = () => {
     setMessage('');
 
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('auth_token');
       const response = await fetch('/api/apikey', {
         method: 'POST',
         headers: {
@@ -87,7 +87,7 @@ const ApiKeyManager = () => {
     }
 
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('auth_token');
       const response = await fetch(`/api/apikey/${keyId}`, {
         method: 'DELETE',
         headers: {

@@ -47,7 +47,7 @@ const Trends = () => {
     setError('');
     
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('auth_token');
       const response = await fetch(`/api/scan/trends?days=${timeRange}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -105,7 +105,7 @@ const Trends = () => {
       const endpoint = format === 'json' ? '/api/scan/trends/export/json' : '/api/scan/trends/export';
       const response = await fetch(`${endpoint}?days=${timeRange}`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
         },
       });
 

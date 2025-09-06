@@ -25,7 +25,7 @@ const AdminFeedback = () => {
   const fetchFeedback = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('auth_token');
       const response = await fetch('/api/admin/feedback', {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -47,7 +47,7 @@ const AdminFeedback = () => {
 
   const handleExportCSV = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('auth_token');
       const response = await fetch('/api/admin/feedback/export', {
         headers: {
           'Authorization': `Bearer ${token}`

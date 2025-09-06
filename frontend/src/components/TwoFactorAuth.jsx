@@ -30,7 +30,7 @@ const TwoFactorAuth = ({ user, onUpdate }) => {
     setError('');
     
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('auth_token');
       const response = await fetch('/api/2fa/setup', {
         method: 'POST',
         headers: {
@@ -64,7 +64,7 @@ const TwoFactorAuth = ({ user, onUpdate }) => {
     setError('');
 
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('auth_token');
       const response = await fetch('/api/2fa/verify', {
         method: 'POST',
         headers: {
@@ -103,7 +103,7 @@ const TwoFactorAuth = ({ user, onUpdate }) => {
     setError('');
 
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('auth_token');
       const response = await fetch('/api/2fa/disable', {
         method: 'POST',
         headers: {

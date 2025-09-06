@@ -190,6 +190,7 @@ const AppContent = () => {
   const TeamView = () => (
     <div className="team-container">
       <SafeComponent component={TeamAnnotations} />
+      <SafeComponent component={Chat} />
     </div>
   );
 

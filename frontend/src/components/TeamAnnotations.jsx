@@ -34,7 +34,7 @@ const TeamAnnotations = ({ scanId, vulnId, vulnName }) => {
   const fetchAnnotations = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('auth_token');
       const response = await fetch(`/api/scan/${scanId}/annotations`, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -65,7 +65,7 @@ const TeamAnnotations = ({ scanId, vulnId, vulnName }) => {
     }
 
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('auth_token');
       const response = await fetch(`/api/scan/${scanId}/annotations`, {
         method: 'POST',
         headers: {

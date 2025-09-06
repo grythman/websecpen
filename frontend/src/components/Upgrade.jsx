@@ -12,7 +12,7 @@ const Upgrade = () => {
     setError('');
     
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('auth_token');
       const response = await fetch('/api/subscription/create-checkout', {
         method: 'POST',
         headers: {

@@ -17,7 +17,7 @@ const MfaSetup = () => {
 
   const fetchMfaStatus = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('auth_token');
       const response = await fetch('/api/mfa/status', {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -39,7 +39,7 @@ const MfaSetup = () => {
     setMessage('');
 
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('auth_token');
       const response = await fetch('/api/mfa/setup', {
         method: 'POST',
         headers: {
@@ -77,7 +77,7 @@ const MfaSetup = () => {
     setMessage('');
 
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('auth_token');
       const response = await fetch('/api/mfa/verify', {
         method: 'POST',
         headers: {

@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Auth</title>
+</head>
+<body>
+    <h1>Debug Authentication</h1>
+    <button onclick="testLogin()">Test Login</button>
+    <button onclick="testProfile()">Test Profile</button>
+    <button onclick="clearToken()">Clear Token</button>
+    <div id="output"></div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:5000';
+        
+        class ApiService {
+            constructor() {
+                this.baseURL = API_BASE_URL;
+                this.token = localStorage.getItem('auth_token');
+            }
+
+            setToken(token) {
+                this.token = token;
+                localStorage.setItem('auth_token', token);
+            }
+
+            removeToken() {
+                this.token = null;
+                localStorage.removeItem('auth_token');
+            }
+
+            async request(endpoint, options = {}) {
+                const url = `${this.baseURL}${endpoint}`;
+                const config = {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...options.headers,
+                    },
+                    ...options,
+                };
+
+                if (this.token) {
+                    config.headers.Authorization = `Bearer ${this.token}`;
+                    console.log('Sending request with token:', this.token);
+                } else {
+                    console.log('No token found in request to:', url);
+                }
+
+                console.log('Request config:', config);
+
+                try {
+                    const response = await fetch(url, config);
+                    
+                    if (!response.ok) {
+                        const errorData = await response.json().catch(() => ({}));
+                        console.error('Response error:', errorData);
+                        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+                    }
+
+                    const contentType = response.headers.get('content-type');
+                    if (contentType && contentType.includes('application/json')) {
+                        return await response.json();
+                    }
+                    
+                    return response;
+                } catch (error) {
+                    console.error('API request failed:', error);
+                    throw error;
+                }
+            }
+
+            async login(email, password) {
+                const response = await this.request('/auth/login', {
+                    method: 'POST',
+                    body: JSON.stringify({ email, password }),
+                });
+                
+                if (response.access_token) {
+                    this.setToken(response.access_token);
+                }
+                
+                return response;
+            }
+
+            async getProfile() {
+                return await this.request('/auth/profile');
+            }
+        }
+
+        const api = new ApiService();
+
+        async function testLogin() {
+            try {
+                const output = document.getElementById('output');
+                output.innerHTML = '<p>Testing login...</p>';
+                
+                const response = await api.login('test@example.com', 'password123');
+                output.innerHTML = `<p>Login successful: ${JSON.stringify(response, null, 2)}</p>`;
+            } catch (error) {
+                const output = document.getElementById('output');
+                output.innerHTML = `<p>Login failed: ${error.message}</p>`;
+            }
+        }
+
+        async function testProfile() {
+            try {
+                const output = document.getElementById('output');
+                output.innerHTML = '<p>Testing profile...</p>';
+                
+                const response = await api.getProfile();
+                output.innerHTML = `<p>Profile successful: ${JSON.stringify(response, null, 2)}</p>`;
+            } catch (error) {
+                const output = document.getElementById('output');
+                output.innerHTML = `<p>Profile failed: ${error.message}</p>`;
+            }
+        }
+
+        function clearToken() {
+            api.removeToken();
+            const output = document.getElementById('output');
+            output.innerHTML = '<p>Token cleared</p>';
+        }
+    </script>
+</body>
+</html>
