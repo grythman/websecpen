@@ -12,7 +12,7 @@ const AdminGuard = ({ children, fallback = null }) => {
     if (isAuthenticated && user && !user.is_admin) {
       addError('Admin access required for this feature');
     }
-  }, [isAuthenticated, user, addError]);
+  }, [isAuthenticated, user]); // Remove addError from dependencies
 
   // Check if user is authenticated and is admin
   if (!isAuthenticated) {
