@@ -1,47 +1,74 @@
-// src/components/Dashboard.jsx
-import React, { useState, useEffect } from 'react';
+// src/components/Dashboard.jsx - Modern Dashboard (Replaced with Better Design)
+import React, { useState, useEffect, useContext } from 'react';
+import { useTranslation } from 'react-i18next';
+import { ThemeContext } from '../context/ThemeContext.jsx';
 import { useAuth } from '../context/AuthContext';
-import './Dashboard.css';
+import LanguageSwitcher from './LanguageSwitcher.jsx';
+import './ModernDashboard.css';
+import KpiCard from './ui/KpiCard.jsx';
 
 const Dashboard = () => {
   const { user } = useAuth();
+  const { theme, toggleTheme } = useContext(ThemeContext);
+  const { t, i18n } = useTranslation();
+  
   const [stats, setStats] = useState({
-    totalScans: 0,
-    vulnerabilities: 0,
-    highRisk: 0,
-    lastScan: 'Never'
-  });
-
-  const [recentScans, setRecentScans] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    // Simulate loading
-    const timer = setTimeout(() => {
-      // Mock data for demonstration
-      setStats({
         totalScans: 12,
-        vulnerabilities: 8,
-        highRisk: 3,
+    vulnerabilitiesFound: 8,
+    highRiskScore: 3,
         lastScan: '2 hours ago'
       });
 
-      setRecentScans([
-        { id: 1, target: 'example.com', status: 'Completed', vulnerabilities: 2, date: '2025-09-06' },
-        { id: 2, target: 'test.com', status: 'In Progress', vulnerabilities: 0, date: '2025-09-06' },
-        { id: 3, target: 'demo.com', status: 'Completed', vulnerabilities: 5, date: '2025-09-05' },
-        { id: 4, target: 'sample.com', status: 'Completed', vulnerabilities: 1, date: '2025-09-05' }
-      ]);
-      
-      setIsLoading(false);
-    }, 1000);
+  const [recentScans, setRecentScans] = useState([
+    { id: 1, target: 'example.com', status: 'completed', vulnerabilities: 2, date: '2025-09-06', severity: 'medium' },
+    { id: 2, target: 'test.com', status: 'in_progress', vulnerabilities: 0, date: '2025-09-06', severity: 'low' },
+    { id: 3, target: 'demo.com', status: 'completed', vulnerabilities: 5, date: '2025-09-05', severity: 'high' },
+  ]);
 
-    return () => clearTimeout(timer);
-  }, []);
+  const [recentActivity, setRecentActivity] = useState([
+    { id: 1, action: 'Started scan of example.com', time: '2 hours ago', type: 'scan', icon: '🔍' },
+    { id: 2, action: 'Found 3 vulnerabilities in test.com', time: '4 hours ago', type: 'vulnerability', icon: '⚠️' },
+    { id: 3, action: 'Completed scan of demo.com', time: '1 day ago', type: 'completed', icon: '✅' },
+    { id: 4, action: 'Updated security policies', time: '2 days ago', type: 'update', icon: '🔧' },
+  ]);
+
+  const [isLoading, setIsLoading] = useState(false);
+
+  const quickActions = [
+    { id: 1, title: 'New Scan', description: 'Start a security scan', icon: '🔍', color: 'blue', action: 'scan' },
+    { id: 2, title: 'View Reports', description: 'Check scan results', icon: '📊', color: 'green', action: 'reports' },
+    { id: 3, title: 'Vulnerabilities', description: 'Review security issues', icon: '⚠️', color: 'orange', action: 'vulnerabilities' },
+    { id: 4, title: 'Settings', description: 'Configure scanner', icon: '⚙️', color: 'purple', action: 'settings' },
+  ];
+
+  const securityStatus = [
+    { label: 'Scanner Active', status: 'active', icon: '🟢' },
+    { label: 'Database Connected', status: 'connected', icon: '🟢' },
+    { label: 'API Connected', status: 'connected', icon: '🟢' },
+    { label: 'Updates Available', status: 'warning', icon: '🟡' },
+  ];
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'completed': return 'success';
+      case 'in_progress': return 'warning';
+      case 'failed': return 'error';
+      default: return 'default';
+    }
+  };
+
+  const getSeverityColor = (severity) => {
+    switch (severity) {
+      case 'high': return 'error';
+      case 'medium': return 'warning';
+      case 'low': return 'success';
+      default: return 'default';
+    }
+  };
 
   if (isLoading) {
     return (
-      <div className="dashboard">
+      <div className={`modern-dashboard ${theme}`}>
         <div className="loading-container">
           <div className="loading-spinner"></div>
           <p>Loading dashboard...</p>
@@ -51,193 +78,153 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="dashboard">
-      <div className="dashboard-header">
-        <h2>Security Dashboard</h2>
-        <p>Welcome back, {user?.first_name || 'User'}! Here's your security overview.</p>
+    <div className={`modern-dashboard ${theme}`}>
+      {/* Language Switcher - positioned fixed */}
+      <div className="dashboard-controls">
+        <LanguageSwitcher position="fixed" size="small" className={theme} />
+        <button className="theme-toggle-fixed" onClick={toggleTheme}>
+          {theme === 'dark' ? '☀️' : '🌙'}
+        </button>
       </div>
       
-      <div className="dashboard-content">
-        {/* Stats Overview */}
-        <div className="stats-overview">
-          <div className="stat-card">
-            <div className="stat-icon">🔍</div>
-            <div className="stat-content">
-              <h3>{stats.totalScans}</h3>
-              <p>Total Scans</p>
-            </div>
+      {/* Main Content */}
+      <main className="dashboard-main-content">
+        {/* Welcome Section */}
+        <section className="welcome-section">
+          <div className="welcome-content">
+            <h2>{t('welcome')}, {user?.first_name || 'Admin'}! 👋</h2>
+            <p>Comprehensive security monitoring and analysis</p>
           </div>
-          
-          <div className="stat-card">
-            <div className="stat-icon">⚠️</div>
-            <div className="stat-content">
-              <h3>{stats.vulnerabilities}</h3>
-              <p>Vulnerabilities</p>
-            </div>
+          <div className="welcome-actions">
+            <button className="primary-btn">
+              <span className="btn-icon">🚀</span>
+              {t('scan_button')}
+            </button>
           </div>
-          
-          <div className="stat-card">
-            <div className="stat-icon">🚨</div>
-            <div className="stat-content">
-              <h3>{stats.highRisk}</h3>
-              <p>High Risk</p>
-            </div>
-          </div>
-          
-          <div className="stat-card">
-            <div className="stat-icon">⏰</div>
-            <div className="stat-content">
-              <h3>{stats.lastScan}</h3>
-              <p>Last Scan</p>
-            </div>
-          </div>
-        </div>
+        </section>
 
-        {/* Main Content Grid */}
+        {/* Stats Overview */}
+        <section className="stats-section">
+          <div className="stats-grid">
+            <KpiCard icon="🔍" label={t('total_scans')} value={stats.totalScans} delta={"+12%"} tone="primary" />
+            <KpiCard icon="⚠️" label={t('vulnerabilities_found')} value={stats.vulnerabilitiesFound} delta={"-5%"} tone="warning" />
+            <KpiCard icon="🚨" label={'High Risk Issues'} value={stats.highRiskScore} delta={"0%"} tone="danger" />
+            <KpiCard icon="⏰" label={'Last Scan'} value={stats.lastScan} delta={""} tone="success" />
+          </div>
+        </section>
+
+        {/* Main Dashboard Grid */}
         <div className="dashboard-grid">
-          {/* Recent Scans */}
-          <div className="dashboard-section">
-            <div className="section-header">
-              <h3>🔍 Recent Scans</h3>
-              <button className="btn-primary">New Scan</button>
+          {/* Recent Activity */}
+          <section className="dashboard-card recent-activity">
+            <div className="card-header">
+              <div className="header-left">
+                <h3>🔍 {t('recent_activity')}</h3>
+                <span className="card-subtitle">Latest security events</span>
+              </div>
+              <button className="header-action">View All</button>
             </div>
-            <div className="section-content">
-              {recentScans.length > 0 ? (
-                <div className="scan-list">
-                  {recentScans.map(scan => (
-                    <div key={scan.id} className="scan-item">
-                      <div className="scan-info">
-                        <h4>{scan.target}</h4>
-                        <p>{scan.date}</p>
+            <div className="card-content">
+              <div className="activity-list">
+                {recentScans.map((scan) => (
+                  <div key={scan.id} className="activity-item">
+                    <div className="activity-icon">
+                      <div className={`icon-wrapper ${getStatusColor(scan.status)}`}>
+                        {scan.status === 'completed' ? '✅' : scan.status === 'in_progress' ? '⏳' : '❌'}
                       </div>
-                      <div className="scan-status">
-                        <span className={`status-badge ${scan.status.toLowerCase().replace(' ', '-')}`}>
-                          {scan.status}
+                    </div>
+                    <div className="activity-content">
+                      <div className="activity-title">{scan.target}</div>
+                      <div className="activity-meta">
+                        <span className="activity-date">{scan.date}</span>
+                        <span className={`status-badge ${getStatusColor(scan.status)}`}>
+                          {scan.status.replace('_', ' ')}
                         </span>
-                        <span className="vuln-count">
+                        <span className={`severity-badge ${getSeverityColor(scan.severity)}`}>
                           {scan.vulnerabilities} vulnerabilities
                         </span>
                       </div>
                     </div>
+                    <button className="activity-action">→</button>
+                    </div>
                   ))}
                 </div>
-              ) : (
-                <div className="empty-state">
-                  <p>No scans yet. Start your first security scan!</p>
-                  <button className="btn-primary">Start Scan</button>
-                </div>
-              )}
+              <button className="view-more-btn">{t('new_scan')}</button>
             </div>
-          </div>
+          </section>
 
           {/* Quick Actions */}
-          <div className="dashboard-section">
-            <div className="section-header">
+          <section className="dashboard-card quick-actions">
+            <div className="card-header">
+              <div className="header-left">
               <h3>⚡ Quick Actions</h3>
-            </div>
-            <div className="section-content">
-              <div className="action-grid">
-                <button className="action-card">
-                  <div className="action-icon">🔍</div>
-                  <h4>New Scan</h4>
-                  <p>Start a security scan</p>
-                </button>
-                
-                <button className="action-card">
-                  <div className="action-icon">📊</div>
-                  <h4>View Reports</h4>
-                  <p>Check scan results</p>
-                </button>
-                
-                <button className="action-card">
-                  <div className="action-icon">⚠️</div>
-                  <h4>Vulnerabilities</h4>
-                  <p>Review security issues</p>
-                </button>
-                
-                <button className="action-card">
-                  <div className="action-icon">⚙️</div>
-                  <h4>Settings</h4>
-                  <p>Configure scanner</p>
-                </button>
+                <span className="card-subtitle">Common tasks</span>
               </div>
             </div>
-          </div>
+            <div className="card-content">
+              <div className="actions-grid">
+                {quickActions.map((action) => (
+                  <button key={action.id} className={`action-card ${action.color}`}>
+                    <div className="action-icon">{action.icon}</div>
+                    <div className="action-title">{action.title}</div>
+                    <div className="action-description">{action.description}</div>
+                </button>
+                ))}
+              </div>
+            </div>
+          </section>
 
           {/* Security Status */}
-          <div className="dashboard-section">
-            <div className="section-header">
+          <section className="dashboard-card security-status">
+            <div className="card-header">
+              <div className="header-left">
               <h3>🛡️ Security Status</h3>
+                <span className="card-subtitle">System health</span>
+              </div>
+              <div className="status-indicator all-good">All Systems Operational</div>
             </div>
-            <div className="section-content">
-              <div className="security-status">
-                <div className="status-indicator">
-                  <div className="status-dot active"></div>
-                  <span>Scanner Active</span>
+            <div className="card-content">
+              <div className="status-list">
+                {securityStatus.map((item, index) => (
+                  <div key={index} className="status-item">
+                    <div className="status-icon">{item.icon}</div>
+                    <div className="status-content">
+                      <div className="status-label">{item.label}</div>
+                      <div className={`status-value ${item.status}`}>
+                        {item.status === 'active' || item.status === 'connected' ? 'Online' : 'Attention Required'}
                 </div>
-                <div className="status-indicator">
-                  <div className="status-dot warning"></div>
-                  <span>Updates Available</span>
                 </div>
-                <div className="status-indicator">
-                  <div className="status-dot success"></div>
-                  <span>Database Connected</span>
                 </div>
-                <div className="status-indicator">
-                  <div className="status-dot active"></div>
-                  <span>API Connected</span>
-                </div>
+                ))}
               </div>
             </div>
-          </div>
+          </section>
 
-          {/* Recent Activity */}
-          <div className="dashboard-section">
-            <div className="section-header">
-              <h3>📈 Recent Activity</h3>
+          {/* Recent Activity Timeline */}
+          <section className="dashboard-card activity-timeline">
+            <div className="card-header">
+              <div className="header-left">
+                <h3>📈 Activity Timeline</h3>
+                <span className="card-subtitle">Recent events</span>
+          </div>
+              <button className="header-action">View History</button>
             </div>
-            <div className="section-content">
-              <div className="activity-list">
-                <div className="activity-item">
-                  <div className="activity-icon">🔍</div>
-                  <div className="activity-content">
-                    <p>Started scan of example.com</p>
-                    <span>2 hours ago</span>
-                  </div>
+            <div className="card-content">
+              <div className="timeline">
+                {recentActivity.map((activity) => (
+                  <div key={activity.id} className="timeline-item">
+                    <div className="timeline-icon">{activity.icon}</div>
+                    <div className="timeline-content">
+                      <div className="timeline-title">{activity.action}</div>
+                      <div className="timeline-time">{activity.time}</div>
                 </div>
-                <div className="activity-item">
-                  <div className="activity-icon">⚠️</div>
-                  <div className="activity-content">
-                    <p>Found 3 vulnerabilities in test.com</p>
-                    <span>4 hours ago</span>
                   </div>
-                </div>
-                <div className="activity-item">
-                  <div className="activity-icon">✅</div>
-                  <div className="activity-content">
-                    <p>Completed scan of demo.com</p>
-                    <span>1 day ago</span>
-                  </div>
-                </div>
-                <div className="activity-item">
-                  <div className="activity-icon">🔧</div>
-                  <div className="activity-content">
-                    <p>Updated security policies</p>
-                    <span>2 days ago</span>
-                  </div>
-                </div>
-                <div className="activity-item">
-                  <div className="activity-icon">🔐</div>
-                  <div className="activity-content">
-                    <p>User logged in successfully</p>
-                    <span>Just now</span>
-                  </div>
-                </div>
+                ))}
               </div>
             </div>
-          </div>
+          </section>
         </div>
-      </div>
+      </main>
     </div>
   );
 };

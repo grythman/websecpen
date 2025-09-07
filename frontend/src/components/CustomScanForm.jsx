@@ -1,16 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import './CustomScanForm.css';
+import apiService from '../services/api.js';
+
+const steps = [
+  { key: 'target', label: 'Target' },
+  { key: 'config', label: 'Configuration' },
+  { key: 'review', label: 'Review' }
+];
 
 const CustomScanForm = ({ onScanStart }) => {
+  const [stepIdx, setStepIdx] = useState(0);
   const [url, setUrl] = useState('');
   const [selectedPreset, setSelectedPreset] = useState('');
   const [customConfig, setCustomConfig] = useState({
-    scan_type: 'spider',
-    max_depth: 10,
-    ajax_spider: false,
-    scan_policy: 'default',
-    include_alpha: false,
-    include_beta: false,
+    scan_type: 'XSS',
+    max_depth: 3,
+    include_sql: true,
+    include_xss: true,
+    include_csrf: false,
+    include_directory: false,
+    scan_delay: 1,
+    aggressive_mode: false,
     custom_headers: {},
     authentication: null,
     exclusion_patterns: []
@@ -28,32 +38,25 @@ const CustomScanForm = ({ onScanStart }) => {
 
   const fetchPresets = async () => {
     try {
-      const token = localStorage.getItem('auth_token');
-      const response = await fetch('/api/scan/presets', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setPresets(data.presets);
-      }
+      const data = await apiService.getScanPresets();
+      setPresets(data.presets || {});
     } catch (error) {
       console.error('Error fetching presets:', error);
     }
   };
 
-  const handlePresetChange = (presetName) => {
-    setSelectedPreset(presetName);
-    if (presetName && presets[presetName]) {
-      setCustomConfig({...customConfig, ...presets[presetName].config});
+  const handlePresetChange = (presetKey) => {
+    setSelectedPreset(presetKey);
+    if (presetKey && presets[presetKey]) {
+      setCustomConfig({ ...customConfig, ...presets[presetKey].config });
     }
   };
 
+  const nextStep = () => setStepIdx((i) => Math.min(i + 1, steps.length - 1));
+  const prevStep = () => setStepIdx((i) => Math.max(i - 1, 0));
+
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    e?.preventDefault?.();
     if (!url) return;
 
     setLoading(true);
@@ -78,43 +81,31 @@ const CustomScanForm = ({ onScanStart }) => {
         parsedPatterns = exclusionPatterns.split('\n').map(p => p.trim()).filter(p => p);
       }
 
-      const scanConfig = {
-        ...customConfig,
-        custom_headers: parsedHeaders,
-        exclusion_patterns: parsedPatterns
+      const payload = {
+        url,
+        scan_type: customConfig.scan_type,
+        max_depth: customConfig.max_depth,
+        include_sql: customConfig.include_sql,
+        include_xss: customConfig.include_xss,
+        include_csrf: customConfig.include_csrf,
+        include_directory: customConfig.include_directory,
+        scan_delay: customConfig.scan_delay,
+        aggressive_mode: customConfig.aggressive_mode,
+        custom_headers: parsedHeaders
       };
 
-      const token = localStorage.getItem('auth_token');
-      const response = await fetch('/api/scan/start', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          url,
-          config: scanConfig
-        })
-      });
+      const response = await apiService.startScan(payload);
 
-      const data = await response.json();
-
-      if (response.ok) {
         setMessage('Scan started successfully!');
-        if (onScanStart) {
-          onScanStart(data);
-        }
+      if (onScanStart) onScanStart(response);
         // Reset form
         setUrl('');
         setSelectedPreset('');
         setCustomHeaders('');
         setExclusionPatterns('');
-      } else {
-        setMessage(data.error || 'Failed to start scan');
-      }
+      setStepIdx(0);
     } catch (error) {
-      setMessage('Error starting scan');
-      console.error('Error:', error);
+      setMessage(error.message || 'Failed to start scan');
     } finally {
       setLoading(false);
     }
@@ -146,8 +137,19 @@ const CustomScanForm = ({ onScanStart }) => {
         <p>Configure advanced scan parameters for comprehensive security testing</p>
       </div>
 
+      {/* Wizard steps indicator */}
+      <div className="wizard-steps">
+        {steps.map((s, i) => (
+          <div key={s.key} className={`wizard-step ${i === stepIdx ? 'active' : ''} ${i < stepIdx ? 'done' : ''}`}>
+            <span className="step-index">{i + 1}</span>
+            <span className="step-label">{s.label}</span>
+          </div>
+        ))}
+      </div>
+
       <form onSubmit={handleSubmit}>
-        {/* URL Input */}
+        {/* Step 1: URL */}
+        {stepIdx === 0 && (
         <div className="form-section">
           <div className="form-group">
             <label htmlFor="url">Target URL *</label>
@@ -161,9 +163,17 @@ const CustomScanForm = ({ onScanStart }) => {
               disabled={loading}
             />
           </div>
+            <div className="form-actions">
+              <button type="button" className="scan-button" disabled={!url} onClick={nextStep}>
+                Next →
+              </button>
+            </div>
         </div>
+        )}
 
-        {/* Preset Selection */}
+        {/* Step 2: Preset + Config */}
+        {stepIdx === 1 && (
+          <>
         <div className="form-section">
           <h4>Quick Presets</h4>
           <div className="preset-grid">
@@ -194,7 +204,6 @@ const CustomScanForm = ({ onScanStart }) => {
           </div>
         </div>
 
-        {/* Basic Configuration */}
         <div className="form-section">
           <h4>Scan Configuration</h4>
           <div className="form-grid">
@@ -203,15 +212,14 @@ const CustomScanForm = ({ onScanStart }) => {
               <select
                 id="scan_type"
                 value={customConfig.scan_type}
-                onChange={(e) => setCustomConfig({...customConfig, scan_type: e.target.value})}
+                    onChange={(e) => setCustomConfig({ ...customConfig, scan_type: e.target.value })}
                 disabled={loading}
               >
-                <option value="spider">Spider Scan</option>
-                <option value="active">Active Scan</option>
-                <option value="passive">Passive Scan</option>
-                <option value="baseline">Baseline Scan</option>
+                    <option value="XSS">XSS</option>
+                    <option value="SQLi">SQL Injection</option>
+                    <option value="CSRF">CSRF</option>
+                    <option value="Directory">Directory</option>
               </select>
-              <small>{getScanTypeDescription(customConfig.scan_type)}</small>
             </div>
 
             <div className="form-group">
@@ -222,25 +230,25 @@ const CustomScanForm = ({ onScanStart }) => {
                 min="1"
                 max="20"
                 value={customConfig.max_depth}
-                onChange={(e) => setCustomConfig({...customConfig, max_depth: parseInt(e.target.value)})}
+                    onChange={(e) => setCustomConfig({ ...customConfig, max_depth: parseInt(e.target.value) })}
                 disabled={loading}
               />
               <small>How deep to crawl the website (1-20 levels)</small>
             </div>
 
             <div className="form-group">
-              <label htmlFor="scan_policy">Scan Policy</label>
-              <select
-                id="scan_policy"
-                value={customConfig.scan_policy}
-                onChange={(e) => setCustomConfig({...customConfig, scan_policy: e.target.value})}
+                  <label htmlFor="scan_delay">Scan Delay (sec)</label>
+                  <input
+                    id="scan_delay"
+                    type="number"
+                    min="0.5"
+                    max="10"
+                    step="0.5"
+                    value={customConfig.scan_delay}
+                    onChange={(e) => setCustomConfig({ ...customConfig, scan_delay: parseFloat(e.target.value) })}
                 disabled={loading}
-              >
-                <option value="default">Default Policy</option>
-                <option value="comprehensive">Comprehensive</option>
-                <option value="modern_web">Modern Web Apps</option>
-              </select>
-              <small>{getScanPolicyDescription(customConfig.scan_policy)}</small>
+                  />
+                  <small>Delay between requests (0.5 - 10s)</small>
             </div>
           </div>
 
@@ -248,39 +256,70 @@ const CustomScanForm = ({ onScanStart }) => {
             <label className="checkbox-label">
               <input
                 type="checkbox"
-                checked={customConfig.ajax_spider}
-                onChange={(e) => setCustomConfig({...customConfig, ajax_spider: e.target.checked})}
+                    checked={customConfig.include_sql}
+                    onChange={(e) => setCustomConfig({ ...customConfig, include_sql: e.target.checked })}
+                    disabled={loading}
+                  />
+                  <span>Include SQLi checks</span>
+                  <small>SQL injection patterns</small>
+                </label>
+
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={customConfig.include_xss}
+                    onChange={(e) => setCustomConfig({ ...customConfig, include_xss: e.target.checked })}
+                    disabled={loading}
+                  />
+                  <span>Include XSS checks</span>
+                  <small>Cross-site scripting</small>
+                </label>
+
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={customConfig.include_csrf}
+                    onChange={(e) => setCustomConfig({ ...customConfig, include_csrf: e.target.checked })}
                 disabled={loading}
               />
-              <span>Enable AJAX Spider</span>
-              <small>Scan modern JavaScript applications</small>
+                  <span>Include CSRF checks</span>
+                  <small>Cross-site request forgery</small>
             </label>
 
             <label className="checkbox-label">
               <input
                 type="checkbox"
-                checked={customConfig.include_alpha}
-                onChange={(e) => setCustomConfig({...customConfig, include_alpha: e.target.checked})}
+                    checked={customConfig.include_directory}
+                    onChange={(e) => setCustomConfig({ ...customConfig, include_directory: e.target.checked })}
                 disabled={loading}
               />
-              <span>Include Alpha Rules</span>
-              <small>Experimental vulnerability detection</small>
+                  <span>Include Directory checks</span>
+                  <small>Path traversal and exposure</small>
             </label>
 
             <label className="checkbox-label">
               <input
                 type="checkbox"
-                checked={customConfig.include_beta}
-                onChange={(e) => setCustomConfig({...customConfig, include_beta: e.target.checked})}
+                    checked={customConfig.aggressive_mode}
+                    onChange={(e) => setCustomConfig({ ...customConfig, aggressive_mode: e.target.checked })}
                 disabled={loading}
               />
-              <span>Include Beta Rules</span>
-              <small>Latest vulnerability checks</small>
+                  <span>Aggressive mode</span>
+                  <small>More thorough but slower</small>
             </label>
           </div>
-        </div>
 
-        {/* Advanced Configuration */}
+              <div className="form-actions">
+                <button type="button" className="scan-button" onClick={prevStep}>← Back</button>
+                <button type="button" className="scan-button" onClick={nextStep}>Next →</button>
+              </div>
+        </div>
+          </>
+        )}
+
+        {/* Step 3: Advanced + Review */}
+        {stepIdx === 2 && (
+          <>
         <div className="form-section">
           <div className="advanced-toggle">
             <button
@@ -323,37 +362,14 @@ const CustomScanForm = ({ onScanStart }) => {
           )}
         </div>
 
-        {/* Submit Button */}
-        <div className="form-actions">
-          <button
-            type="submit"
-            disabled={loading || !url}
-            className="scan-button"
-          >
-            {loading ? (
-              <>
-                <span className="button-spinner"></span>
-                Starting Scan...
-              </>
-            ) : (
-              <>
-                🚀 Start Scan
-              </>
-            )}
-          </button>
-        </div>
-
-        {message && (
-          <div className={`message ${message.includes('Error') || message.includes('Failed') ? 'error' : 'success'}`}>
-            {message}
-          </div>
-        )}
-      </form>
-
-      {/* Configuration Summary */}
+            {/* Review Summary */}
       <div className="config-summary">
         <h4>Scan Summary</h4>
         <div className="summary-grid">
+                <div className="summary-item">
+                  <span className="label">Target:</span>
+                  <span className="value">{url || '-'}</span>
+                </div>
           <div className="summary-item">
             <span className="label">Type:</span>
             <span className="value">{customConfig.scan_type}</span>
@@ -371,7 +387,29 @@ const CustomScanForm = ({ onScanStart }) => {
             <span className="value">{customConfig.ajax_spider ? 'Enabled' : 'Disabled'}</span>
           </div>
         </div>
+              <div className="form-actions">
+                <button type="button" className="scan-button" onClick={prevStep}>← Back</button>
+                <button type="submit" disabled={loading || !url} className="scan-button">
+                  {loading ? (
+                    <>
+                      <span className="button-spinner"></span>
+                      Starting Scan...
+                    </>
+                  ) : (
+                    <>🚀 Start Scan</>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {message && (
+              <div className={`message ${message.includes('Error') || message.includes('Failed') ? 'error' : 'success'}`}>
+                {message}
       </div>
+            )}
+          </>
+        )}
+      </form>
     </div>
   );
 };

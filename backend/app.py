@@ -8,7 +8,6 @@ from flask_socketio import SocketIO
 from flask_restx import Api, Resource, fields
 from datetime import datetime, timedelta
 import re
-import random
 import os
 import uuid
 
@@ -31,7 +30,9 @@ from aug18_features import init_aug18_routes
 from aug19_features import init_aug19_routes
 from pdf_report import generate_pdf_report
 
-app = Flask(__name__)
+# Set instance path to backend directory regardless of where we run from
+backend_dir = os.path.abspath(os.path.dirname(__file__))
+app = Flask(__name__, instance_relative_config=True, instance_path=backend_dir)
 
 # Initialize Sentry for error monitoring
 sentry_dsn = os.getenv('SENTRY_DSN')
@@ -46,7 +47,7 @@ if sentry_dsn:
 # Configuration
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///websecpen.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', 'your-secret-key-change-in-production')
+app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', os.urandom(32).hex())
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=24)
 app.config['JWT_CSRF_PROTECT'] = False  # Disable CSRF for API usage
 app.config['JWT_TOKEN_LOCATION'] = ['headers']

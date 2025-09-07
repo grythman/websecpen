@@ -1,5 +1,6 @@
 // src/components/Login.jsx
-import { useState, useContext } from 'react';
+import { useState, useContext, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { ThemeContext } from '../context/ThemeContext.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useError } from '../context/ErrorContext.jsx';
@@ -12,8 +13,17 @@ const Login = ({ onSuccess }) => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { theme } = useContext(ThemeContext);
-  const { login } = useAuth();
+  const { login, isAuthenticated } = useAuth();
   const { addError } = useError();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const from = location.state?.from?.pathname || '/';
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate(from, { replace: true });
+    }
+  }, [isAuthenticated, from, navigate]);
 
   const validateEmail = (email) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -24,7 +34,6 @@ const Login = ({ onSuccess }) => {
     e.preventDefault();
     setError('');
 
-    // Client-side validation
     if (!email || !password) {
       setError('Please fill in all fields');
       return;
@@ -41,22 +50,14 @@ const Login = ({ onSuccess }) => {
     }
 
     setIsLoading(true);
-    
     try {
-      // Use real authentication service
       const result = await login(email, password);
-      
       if (result.success) {
-        console.log('Login successful');
-        
-        // Call the onLogin callback to update parent component
-        if (onSuccess) {
-          onSuccess();
-        }
+        if (onSuccess) onSuccess();
+        navigate(from, { replace: true });
       } else {
         setError(result.message || 'Login failed. Please try again.');
       }
-      
     } catch (err) {
       console.error('Login error:', err);
       setError('Login failed. Please try again.');
@@ -84,7 +85,6 @@ const Login = ({ onSuccess }) => {
               disabled={isLoading}
             />
           </div>
-          
           <div className="form-group">
             <input
               type="password"
@@ -95,17 +95,10 @@ const Login = ({ onSuccess }) => {
               disabled={isLoading}
             />
           </div>
-          
           {error && <div className="error-message">{error}</div>}
-          
-          <button 
-            type="submit" 
-            className="login-button" 
-            disabled={isLoading}
-          >
+          <button type="submit" className="login-button" disabled={isLoading}>
             {isLoading ? 'Logging in...' : 'Login'}
           </button>
-          
           <div className="login-footer">
             <a href="#" className="forgot-password">Forgot Password?</a>
           </div>

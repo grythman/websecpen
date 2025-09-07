@@ -76,10 +76,23 @@ const resources = {
       email: 'Email',
       password: 'Password',
       name: 'Name',
+      first_name: 'First Name',
+      last_name: 'Last Name',
       confirm_password: 'Confirm Password',
       required_field: 'This field is required',
       invalid_email: 'Please enter a valid email address',
       password_mismatch: 'Passwords do not match',
+      
+      // Auth
+      sign_in: 'Sign In',
+      sign_up: 'Sign Up',
+      create_account: 'Create Account',
+      already_have_account: 'Already have an account?',
+      dont_have_account: "Don't have an account?",
+      forgot_password: 'Forgot Password?',
+      demo_accounts: 'Demo Accounts',
+      admin_demo: 'Admin Demo',
+      user_demo: 'User Demo',
       
       // Actions
       submit: 'Submit',
@@ -229,10 +242,23 @@ const resources = {
       email: 'Имэйл',
       password: 'Нууц үг',
       name: 'Нэр',
+      first_name: 'Нэр',
+      last_name: 'Овог',
       confirm_password: 'Нууц үг баталгаажуулах',
       required_field: 'Энэ талбар заавал шаардлагатай',
       invalid_email: 'Зөв имэйл хаяг оруулна уу',
       password_mismatch: 'Нууц үг таарахгүй байна',
+      
+      // Auth
+      sign_in: 'Нэвтрэх',
+      sign_up: 'Бүртгүүлэх',
+      create_account: 'Бүртгэл үүсгэх',
+      already_have_account: 'Бүртгэлтэй юу?',
+      dont_have_account: 'Бүртгэлгүй юу?',
+      forgot_password: 'Нууц үг мартсан уу?',
+      demo_accounts: 'Жишээ бүртгэлүүд',
+      admin_demo: 'Админ жишээ',
+      user_demo: 'Хэрэглэгч жишээ',
       
       // Actions
       submit: 'Илгээх',

@@ -1,4 +1,4 @@
-/* src/components/Dashboard.css */
+/* src/components/Dashboard.css - Enhanced Modern UI */
 
 .dashboard {
   min-height: 100vh;
@@ -7,6 +7,7 @@
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   position: relative;
   overflow-x: hidden;
+  transition: all 0.3s ease;
 }
 
 .dashboard::before {
@@ -25,6 +26,48 @@
 
 .dashboard.dark {
   background: linear-gradient(135deg, #1a202c 0%, #2d3748 50%, #4a5568 100%);
+}
+
+/* Language Switcher in Dashboard */
+.dashboard-language-switcher {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  display: flex;
+  gap: 8px;
+  z-index: 1000;
+}
+
+.dashboard-lang-btn {
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.dashboard-lang-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.dashboard-lang-btn.active {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  border-color: transparent;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.dashboard.dark .dashboard-lang-btn {
+  background: rgba(0, 0, 0, 0.3);
+  border-color: rgba(255, 255, 255, 0.1);
 }
 
 /* Dashboard Header */
@@ -585,6 +628,49 @@
     text-align: center;
     gap: 1rem;
   }
+  
+  .scan-item {
+    flex-direction: column;
+    gap: 1rem;
+    text-align: center;
+  }
+  
+  .scan-status {
+    align-items: center;
+  }
+}
+
+/* Loading States */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 50vh;
+  color: white;
+}
+
+.loading-spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid rgba(255, 255, 255, 0.3);
+  border-top: 4px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-container p {
+  font-size: 1.1rem;
+  opacity: 0.8;
+  margin: 0;
+}
+
   
   .scan-item {
     flex-direction: column;

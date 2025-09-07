@@ -119,7 +119,8 @@ class ApiService {
   }
 
   async getProfile() {
-    return await this.request('/auth/profile');
+    const resp = await this.request('/auth/profile');
+    return resp.user ? resp : { user: resp };
   }
 
   // Health check
@@ -149,12 +150,52 @@ class ApiService {
 
   // Mock endpoints for missing functionality
   async getScanPresets() {
+    // Presets aligned with backend fields
     return {
-      presets: [
-        { id: 1, name: 'Quick Scan', description: 'Basic security scan' },
-        { id: 2, name: 'Full Scan', description: 'Comprehensive security scan' },
-        { id: 3, name: 'Custom Scan', description: 'Customized security scan' }
-      ]
+      presets: {
+        quick: {
+          name: 'Quick Scan',
+          description: 'Fast baseline using XSS + SQLi checks',
+          config: {
+            scan_type: 'XSS',
+            max_depth: 3,
+            include_sql: true,
+            include_xss: true,
+            include_csrf: false,
+            include_directory: false,
+            scan_delay: 1,
+            aggressive_mode: false,
+          }
+        },
+        full: {
+          name: 'Full Scan',
+          description: 'Comprehensive coverage with all rules',
+          config: {
+            scan_type: 'SQLi',
+            max_depth: 10,
+            include_sql: true,
+            include_xss: true,
+            include_csrf: true,
+            include_directory: true,
+            scan_delay: 1,
+            aggressive_mode: true,
+          }
+        },
+        directory: {
+          name: 'Directory Discovery',
+          description: 'Focus on directory traversal and exposure',
+          config: {
+            scan_type: 'Directory',
+            max_depth: 5,
+            include_sql: false,
+            include_xss: false,
+            include_csrf: false,
+            include_directory: true,
+            scan_delay: 1,
+            aggressive_mode: false,
+          }
+        }
+      }
     };
   }
 

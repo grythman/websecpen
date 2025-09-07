@@ -31,6 +31,16 @@ class AuthService {
     return this.user;
   }
 
+  // Internal helper to clear auth state
+  clearAuth({ notify = true } = {}) {
+    this.token = null;
+    this.user = null;
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('user');
+    apiService.removeToken();
+    if (notify) this.notifyListeners();
+  }
+
   // Login user
   async login(email, password) {
     try {
@@ -69,18 +79,7 @@ class AuthService {
   // Logout user
   async logout() {
     try {
-      // Clear local state
-      this.token = null;
-      this.user = null;
-      
-      // Clear localStorage
-      localStorage.removeItem('auth_token');
-      localStorage.removeItem('user');
-      
-      // Clear API service token
-      apiService.removeToken();
-      
-      this.notifyListeners();
+      this.clearAuth({ notify: true });
       return { success: true };
     } catch (error) {
       console.error('Logout failed:', error);
@@ -95,20 +94,30 @@ class AuthService {
       const storedUser = localStorage.getItem('user');
       
       if (storedToken && storedUser) {
+        try {
         this.token = storedToken;
         this.user = JSON.parse(storedUser);
         apiService.setToken(storedToken);
         
-        // Verify token is still valid
+          // Notify listeners immediately with stored data
+          this.notifyListeners();
+          
+          // Verify token is still valid and refresh user data
         try {
-          const profile = await apiService.getProfile();
-          this.user = profile;
+            const profileResponse = await apiService.getProfile();
+            this.user = profileResponse.user || profileResponse;
           localStorage.setItem('user', JSON.stringify(this.user));
           this.notifyListeners();
           return true;
         } catch (error) {
-          console.warn('Token validation failed, logging out');
-          await this.logout();
+            console.warn('Token validation failed during init, clearing stored token');
+            // Clear silently to avoid racing a concurrent login
+            this.clearAuth({ notify: false });
+            return false;
+          }
+        } catch (parseError) {
+          console.error('Failed to parse stored user data:', parseError);
+          this.clearAuth({ notify: false });
           return false;
         }
       }
@@ -116,7 +125,7 @@ class AuthService {
       return false;
     } catch (error) {
       console.error('Auth initialization failed:', error);
-      await this.logout();
+      this.clearAuth({ notify: false });
       return false;
     }
   }
@@ -125,11 +134,6 @@ class AuthService {
   async updateProfile(profileData) {
     try {
       // This would be implemented in the backend
-      // const response = await apiService.updateProfile(profileData);
-      // this.user = { ...this.user, ...response };
-      // localStorage.setItem('user', JSON.stringify(this.user));
-      // this.notifyListeners();
-      
       return { success: true };
     } catch (error) {
       console.error('Profile update failed:', error);
@@ -141,7 +145,6 @@ class AuthService {
   async changePassword(currentPassword, newPassword) {
     try {
       // This would be implemented in the backend
-      // await apiService.changePassword(currentPassword, newPassword);
       return { success: true };
     } catch (error) {
       console.error('Password change failed:', error);
@@ -204,6 +207,9 @@ class AuthService {
   }
 }
 
+// Create and export singleton instance
+const authService = new AuthService();
+export default authService; 
 // Create and export singleton instance
 const authService = new AuthService();
 export default authService; 
