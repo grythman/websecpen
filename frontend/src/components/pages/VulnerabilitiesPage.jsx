@@ -43,4 +43,4 @@ const VulnerabilitiesPage = () => {
   );
 };
 
-export default VulnerabilitiesPage; 
+export default VulnerabilitiesPage;

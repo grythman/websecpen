@@ -414,4 +414,4 @@ const CustomScanForm = ({ onScanStart }) => {
   );
 };
 
-export default CustomScanForm; 
+export default CustomScanForm;
