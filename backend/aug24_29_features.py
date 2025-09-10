@@ -137,6 +137,7 @@ def estimate_completion_time(scan, progress):
 class OnboardingStep(db.Model):
     """User onboarding progress tracking"""
     __tablename__ = 'onboarding_steps'
+    __table_args__ = {'extend_existing': True}
     
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
@@ -335,6 +336,7 @@ def mock_crowdstrike_api_call(credentials, data):
 class VulnerabilityStatus(db.Model):
     """Track vulnerability remediation status"""
     __tablename__ = 'vulnerability_statuses'
+    __table_args__ = {'extend_existing': True}
     
     id = db.Column(db.Integer, primary_key=True)
     scan_id = db.Column(db.Integer, db.ForeignKey('scans.id'), nullable=False)
@@ -656,6 +658,7 @@ def get_priority_level(score):
 class Feedback(db.Model):
     """User feedback collection"""
     __tablename__ = 'feedback'
+    __table_args__ = {'extend_existing': True}
     
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
@@ -671,7 +674,7 @@ def init_feedback_system(app):
     
     @app.route('/api/feedback', methods=['POST'])
     @jwt_required()
-    def submit_feedback():
+    def submit_feedback_v2():
         """Submit user feedback"""
         user_id = get_jwt_identity()
         data = request.get_json()
@@ -938,6 +941,7 @@ def get_remediation_resources(alert):
 class DashboardWidget(db.Model):
     """Dashboard widget configuration"""
     __tablename__ = 'dashboard_widgets'
+    __table_args__ = {'extend_existing': True}
     
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
@@ -1010,6 +1014,7 @@ def init_dashboard_customization(app):
 class CronSchedule(db.Model):
     """Cron-based scan scheduling"""
     __tablename__ = 'cron_schedules'
+    __table_args__ = {'extend_existing': True}
     
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
@@ -1103,6 +1108,7 @@ def init_advanced_scheduling(app):
 class IntegrationApiKey(db.Model):
     """Secure API key storage for integrations"""
     __tablename__ = 'integration_api_keys'
+    __table_args__ = {'extend_existing': True}
     
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
@@ -1226,6 +1232,7 @@ def get_integration_credentials(user_id, integration_name):
 class CollaborationComment(db.Model):
     """Team collaboration comments on vulnerabilities"""
     __tablename__ = 'collaboration_comments'
+    __table_args__ = {'extend_existing': True}
     
     id = db.Column(db.Integer, primary_key=True)
     scan_id = db.Column(db.Integer, db.ForeignKey('scans.id'), nullable=False)
@@ -1348,6 +1355,7 @@ def init_collaboration_system(app):
 class UserNotification(db.Model):
     """User notification system"""
     __tablename__ = 'user_notifications'
+    __table_args__ = {'extend_existing': True}
     
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
@@ -1480,7 +1488,6 @@ def init_aug24_29_routes(app):
     init_ai_prioritization(app)
     init_feedback_system(app)
     init_remediation_ai(app)
-    init_vuln_remediation_endpoint(app)
     init_dashboard_customization(app)
     init_advanced_scheduling(app)
     init_api_key_management(app)

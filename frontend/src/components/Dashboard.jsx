@@ -13,26 +13,84 @@ const Dashboard = () => {
   const { t, i18n } = useTranslation();
   
   const [stats, setStats] = useState({
-        totalScans: 12,
-    vulnerabilitiesFound: 8,
-    highRiskScore: 3,
-        lastScan: '2 hours ago'
-      });
+    totalScans: 0,
+    vulnerabilitiesFound: 0,
+    highRiskScore: 0,
+    lastScan: 'Never'
+  });
 
-  const [recentScans, setRecentScans] = useState([
-    { id: 1, target: 'example.com', status: 'completed', vulnerabilities: 2, date: '2025-09-06', severity: 'medium' },
-    { id: 2, target: 'test.com', status: 'in_progress', vulnerabilities: 0, date: '2025-09-06', severity: 'low' },
-    { id: 3, target: 'demo.com', status: 'completed', vulnerabilities: 5, date: '2025-09-05', severity: 'high' },
-  ]);
+  const [recentScans, setRecentScans] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch real scan data
+  const fetchDashboardData = async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('authToken');
+      const response = await fetch('/scans', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        const scans = data.scans || [];
+        
+        // Calculate stats from real data
+        const totalScans = scans.length;
+        const totalVulns = scans.reduce((sum, scan) => sum + (scan.vulnerabilities_count || 0), 0);
+        const highRiskScans = scans.filter(scan => (scan.risk_score || 0) >= 7).length;
+        
+        // Get last scan date
+        const lastScanData = scans.length > 0 ? scans[0] : null;
+        const lastScan = lastScanData ? 
+          new Date(lastScanData.completed_at || lastScanData.created_at).toLocaleDateString() : 
+          'Never';
+
+        setStats({
+          totalScans,
+          vulnerabilitiesFound: totalVulns,
+          highRiskScore: highRiskScans,
+          lastScan
+        });
+
+        // Set recent scans (limit to 5 most recent)
+        setRecentScans(scans.slice(0, 5).map(scan => ({
+          id: scan.id,
+          target: scan.target_url,
+          status: scan.status,
+          vulnerabilities: scan.vulnerabilities_count || 0,
+          date: new Date(scan.completed_at || scan.created_at).toLocaleDateString(),
+          severity: getSeverityFromScore(scan.risk_score || 0)
+        })));
+      }
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Helper function to determine severity from risk score
+  const getSeverityFromScore = (score) => {
+    if (score >= 7) return 'high';
+    if (score >= 4) return 'medium';
+    return 'low';
+  };
+
+  // Fetch data on component mount
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
 
   const [recentActivity, setRecentActivity] = useState([
     { id: 1, action: 'Started scan of example.com', time: '2 hours ago', type: 'scan', icon: '🔍' },
     { id: 2, action: 'Found 3 vulnerabilities in test.com', time: '4 hours ago', type: 'vulnerability', icon: '⚠️' },
     { id: 3, action: 'Completed scan of demo.com', time: '1 day ago', type: 'completed', icon: '✅' },
-    { id: 4, action: 'Updated security policies', time: '2 days ago', type: 'update', icon: '🔧' },
+    { id: 4, action: 'Updated security policies', time: '2 days ago', type: 'update', icon: '��' },
   ]);
-
-  const [isLoading, setIsLoading] = useState(false);
 
   const quickActions = [
     { id: 1, title: 'New Scan', description: 'Start a security scan', icon: '🔍', color: 'blue', action: 'scan' },
@@ -66,7 +124,7 @@ const Dashboard = () => {
     }
   };
 
-  if (isLoading) {
+  if (loading) {
     return (
       <div className={`modern-dashboard ${theme}`}>
         <div className="loading-container">

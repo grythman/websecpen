@@ -4,7 +4,7 @@ import apiService from './api.js';
 class AuthService {
   constructor() {
     this.user = null;
-    this.token = localStorage.getItem('auth_token');
+    this.token = localStorage.getItem('authToken');
     this.listeners = [];
   }
 
@@ -35,7 +35,7 @@ class AuthService {
   clearAuth({ notify = true } = {}) {
     this.token = null;
     this.user = null;
-    localStorage.removeItem('auth_token');
+    localStorage.removeItem('authToken');
     localStorage.removeItem('user');
     apiService.removeToken();
     if (notify) this.notifyListeners();
@@ -51,7 +51,7 @@ class AuthService {
         this.user = response.user;
         
         // Store in localStorage
-        localStorage.setItem('auth_token', this.token);
+        localStorage.setItem('authToken', this.token);
         localStorage.setItem('user', JSON.stringify(this.user));
         
         this.notifyListeners();
@@ -90,7 +90,7 @@ class AuthService {
   // Initialize auth state from localStorage
   async initializeAuth() {
     try {
-      const storedToken = localStorage.getItem('auth_token');
+      const storedToken = localStorage.getItem('authToken');
       const storedUser = localStorage.getItem('user');
       
       if (storedToken && storedUser) {

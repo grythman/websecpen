@@ -125,6 +125,32 @@ class Scan(db.Model):
             self.info_severity_count = severity_counts['Informational']
             self.vulnerabilities_count = sum(severity_counts.values())
     
+    def calculate_risk_score(self):
+        """Calculate risk score based on vulnerability counts"""
+        if self.vulnerabilities_count == 0:
+            self.risk_score = 0.0
+            return
+        
+        # Weight scores by severity
+        high_weight = 8.0
+        medium_weight = 5.0
+        low_weight = 2.0
+        info_weight = 0.5
+        
+        total_score = (
+            self.high_severity_count * high_weight +
+            self.medium_severity_count * medium_weight +
+            self.low_severity_count * low_weight +
+            self.info_severity_count * info_weight
+        )
+        
+        # Normalize to 0-10 scale
+        max_possible = self.vulnerabilities_count * high_weight
+        if max_possible > 0:
+            self.risk_score = min(10.0, (total_score / max_possible) * 10.0)
+        else:
+            self.risk_score = 0.0
+    
     def to_dict(self):
         """Convert scan to dictionary"""
         return {

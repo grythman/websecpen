@@ -39,9 +39,9 @@ def init_redis():
 def init_trend_analysis_routes(app):
     """Initialize vulnerability trend analysis routes"""
     
-    @app.route('/api/scan/trends', methods=['GET'])
+    @app.route('/api/scan/trends-v1', methods=['GET'])
     @jwt_required()
-    def get_vuln_trends():
+    def get_scan_trends_v1():
         """Get vulnerability trends over time"""
         user_id = get_jwt_identity()
         
@@ -115,9 +115,9 @@ def init_trend_analysis_routes(app):
         except Exception as e:
             return jsonify({'error': f'Failed to fetch trends: {str(e)}'}), 500
     
-    @app.route('/api/scan/severity', methods=['GET'])
+    @app.route('/api/scan/severity-v1', methods=['GET'])
     @jwt_required()
-    def get_severity_breakdown():
+    def get_severity_breakdown_v1():
         """Get vulnerability severity breakdown"""
         user_id = get_jwt_identity()
         

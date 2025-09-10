@@ -33,9 +33,9 @@ const VulnTrends = () => {
     date_range: { days: 30 }
   });
   const [severityData, setSeverityData] = useState({
-    labels: [],
-    data: [],
-    breakdown_percentages: {}
+    labels: ['High', 'Medium', 'Low'],
+    data: [0, 0, 0],
+    breakdown_percentages: { high: 0, medium: 0, low: 0 }
   });
   const [loading, setLoading] = useState(false);
   const [selectedDays, setSelectedDays] = useState(30);
@@ -49,7 +49,7 @@ const VulnTrends = () => {
   const fetchTrends = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('auth_token');
+      const token = localStorage.getItem('authToken');
       const response = await fetch(`/api/scan/trends?days=${selectedDays}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -59,7 +59,47 @@ const VulnTrends = () => {
 
       if (response.ok) {
         const data = await response.json();
-        setTrends(data);
+        
+        // Transform the API response to match component expectations
+        const transformedTrends = {
+          dates: data.trends?.map(t => t.date) || [],
+          vulnerability_trends: [
+            {
+              label: 'Total Vulnerabilities',
+              data: data.trends?.map(t => t.vulnerabilities) || []
+            },
+            {
+              label: 'High Severity',
+              data: data.trends?.map(t => t.high_severity) || []
+            },
+            {
+              label: 'Medium Severity', 
+              data: data.trends?.map(t => t.medium_severity) || []
+            },
+            {
+              label: 'Low Severity',
+              data: data.trends?.map(t => t.low_severity) || []
+            }
+          ],
+          severity_trends: [
+            {
+              label: 'High',
+              data: data.trends?.map(t => t.high_severity) || []
+            },
+            {
+              label: 'Medium',
+              data: data.trends?.map(t => t.medium_severity) || []
+            },
+            {
+              label: 'Low', 
+              data: data.trends?.map(t => t.low_severity) || []
+            }
+          ],
+          total_scans: data.total_scans || 0,
+          date_range: { days: selectedDays }
+        };
+        
+        setTrends(transformedTrends);
       }
     } catch (error) {
       console.error('Error fetching trends:', error);
@@ -70,7 +110,7 @@ const VulnTrends = () => {
 
   const fetchSeverityBreakdown = async () => {
     try {
-      const token = localStorage.getItem('auth_token');
+      const token = localStorage.getItem('authToken');
       const response = await fetch('/api/scan/severity', {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -80,7 +120,23 @@ const VulnTrends = () => {
 
       if (response.ok) {
         const data = await response.json();
-        setSeverityData(data);
+        
+        // Transform severity breakdown data to match component expectations
+        const transformedSeverityData = {
+          labels: ['High', 'Medium', 'Low'],
+          data: [
+            data.severity_breakdown?.high?.count || 0,
+            data.severity_breakdown?.medium?.count || 0,
+            data.severity_breakdown?.low?.count || 0
+          ],
+          breakdown_percentages: {
+            high: data.severity_breakdown?.high?.percentage || 0,
+            medium: data.severity_breakdown?.medium?.percentage || 0,
+            low: data.severity_breakdown?.low?.percentage || 0
+          }
+        };
+        
+        setSeverityData(transformedSeverityData);
       }
     } catch (error) {
       console.error('Error fetching severity data:', error);
@@ -88,8 +144,8 @@ const VulnTrends = () => {
   };
 
   const vulnerabilityTrendChartData = {
-    labels: trends.dates,
-    datasets: trends.vulnerability_trends.map((trend, index) => ({
+    labels: trends.dates || [],
+    datasets: (trends.vulnerability_trends || []).map((trend, index) => ({
       label: trend.label,
       data: trend.data,
       borderColor: getColor(index),
@@ -101,8 +157,8 @@ const VulnTrends = () => {
   };
 
   const severityTrendChartData = {
-    labels: trends.dates,
-    datasets: trends.severity_trends.map((trend, index) => ({
+    labels: trends.dates || [],
+    datasets: (trends.severity_trends || []).map((trend, index) => ({
       label: trend.label,
       data: trend.data,
       borderColor: getSeverityColor(trend.label),
@@ -114,12 +170,12 @@ const VulnTrends = () => {
   };
 
   const severityBreakdownChartData = {
-    labels: severityData.labels,
+    labels: severityData.labels || [],
     datasets: [
       {
-        data: severityData.data,
-        backgroundColor: severityData.labels.map(label => getSeverityColor(label)),
-        borderColor: severityData.labels.map(label => getSeverityColor(label)),
+        data: severityData.data || [],
+        backgroundColor: (severityData.labels || []).map(label => getSeverityColor(label)),
+        borderColor: (severityData.labels || []).map(label => getSeverityColor(label)),
         borderWidth: 2,
         hoverBorderWidth: 3
       }

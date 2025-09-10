@@ -4,7 +4,7 @@ from flask_jwt_extended import JWTManager, jwt_required, create_access_token, ge
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_compress import Compress
-from flask_socketio import SocketIO
+from flask_socketio import SocketIO, emit, join_room, leave_room
 from flask_restx import Api, Resource, fields
 from datetime import datetime, timedelta
 import re
@@ -23,6 +23,7 @@ from nlp_service import analyze_scan_results
 from monitoring import performance_monitor, alert_manager
 from chat_service import initialize_chat_service
 from premium_features import init_premium_routes
+from scan_analytics import init_scan_analytics_routes
 from advanced_features import init_advanced_routes
 # Removed - merged into advanced_features
 from advanced_analytics import init_advanced_analytics, init_advanced_routes as init_analytics_routes
@@ -64,6 +65,9 @@ limiter = Limiter(
 )
 limiter.init_app(app)
 compress = Compress(app)
+
+# Initialize Socket.IO
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
 
 # Initialize database
 init_db(app)
@@ -182,7 +186,13 @@ def start_scan():
         user_id = get_jwt_identity()
         data = request.get_json()
         
+        # Debug logging
+        print(f"DEBUG: Scan request from user {user_id}")
+        print(f"DEBUG: Request data: {data}")
+        print(f"DEBUG: Content-Type: {request.headers.get('Content-Type')}")
+        
         if not data:
+            print("DEBUG: No JSON data provided")
             return jsonify({'error': 'No JSON data provided'}), 400
             
         url = data.get('url')
@@ -191,6 +201,11 @@ def start_scan():
         # Validation
         if not url or not scan_type:
             return jsonify({'error': 'Missing url or scan_type'}), 400
+            
+        # Auto-add protocol if missing
+        if not url.startswith(('http://', 'https://')):
+            url = 'https://' + url
+            print(f"DEBUG: Auto-added protocol: {url}")
             
         # URL validation
         url_pattern = r'^https?:\/\/(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b(?:[-a-zA-Z0-9()@:%_\+.~#?&=]*)$'
@@ -236,64 +251,71 @@ def start_scan():
         # Integrate with our security scanner (Task 16 complete!)
         def progress_callback(scan_id, results):
             """Update scan progress in database"""
-            current_scan = Scan.query.get(scan_id)
-            if current_scan:
-                current_scan.status = results.get('status', 'running')
-                current_scan.pages_scanned = results.get('pages_scanned', 0)
-                current_scan.requests_made = results.get('requests_made', 0)
-                
-                if results.get('status') == 'completed':
-                    current_scan.completed_at = datetime.utcnow()
-                    current_scan.duration_seconds = int(results.get('duration', 0))
+            with app.app_context():
+                current_scan = Scan.query.get(scan_id)
+                if current_scan:
+                    current_scan.status = results.get('status', 'running')
+                    current_scan.pages_scanned = results.get('pages_scanned', 0)
+                    current_scan.requests_made = results.get('requests_made', 0)
                     
-                    # Process vulnerabilities
-                    vulns = results.get('vulnerabilities', [])
-                    current_scan.vulnerabilities_count = len(vulns)
+                    if results.get('status') == 'completed':
+                        current_scan.completed_at = datetime.utcnow()
+                        current_scan.duration_seconds = int(results.get('duration', 0))
+                        
+                        # Process vulnerabilities
+                        vulns = results.get('vulnerabilities', [])
+                        current_scan.vulnerabilities_count = len(vulns)
+                        
+                        # Count by severity
+                        current_scan.high_severity_count = len([v for v in vulns if v.get('severity') == 'High'])
+                        current_scan.medium_severity_count = len([v for v in vulns if v.get('severity') == 'Medium'])
+                        current_scan.low_severity_count = len([v for v in vulns if v.get('severity') == 'Low'])
+                        
+                        # Calculate risk score
+                        current_scan.calculate_risk_score()
+                        
+                        # Convert datetime objects to strings for JSON serialization
+                        serializable_results = {}
+                        for key, value in results.items():
+                            if isinstance(value, datetime):
+                                serializable_results[key] = value.isoformat()
+                            else:
+                                serializable_results[key] = value
+                        
+                        # Generate NLP analysis of vulnerabilities
+                        nlp_analysis = analyze_scan_results(vulns)
+                        current_scan.nlp_summary = nlp_analysis.get('summary', 'Analysis not available')
+                        
+                        # Store additional NLP insights in results
+                        serializable_results['nlp_analysis'] = nlp_analysis
+                        current_scan.results = serializable_results
+                        
+                        # Create individual vulnerability records
+                        for vuln_data in vulns:
+                            vulnerability = Vulnerability(
+                                scan_id=scan_id,
+                                name=vuln_data.get('title', 'Unknown'),
+                                description=vuln_data.get('description', ''),
+                                risk_level=vuln_data.get('severity', 'Low'),
+                                confidence=str(vuln_data.get('confidence', 0)),
+                                url=vuln_data.get('url', ''),
+                                parameter=vuln_data.get('parameter', ''),
+                                method=vuln_data.get('method', 'GET'),
+                                attack=vuln_data.get('payload', ''),
+                                evidence=vuln_data.get('evidence', ''),
+                                solution=vuln_data.get('solution', '')
+                            )
+                            db.session.add(vulnerability)
                     
-                    # Count by severity
-                    current_scan.high_severity_count = len([v for v in vulns if v.get('severity') == 'High'])
-                    current_scan.medium_severity_count = len([v for v in vulns if v.get('severity') == 'Medium'])
-                    current_scan.low_severity_count = len([v for v in vulns if v.get('severity') == 'Low'])
+                    elif results.get('status') == 'failed':
+                        current_scan.error_message = results.get('error', 'Scan failed')
                     
-                    # Calculate risk score
-                    current_scan.calculate_risk_score()
+                    # Update progress percentage
+                    if results.get('requests_made', 0) > 0:
+                        current_scan.progress_percentage = min(100, (results.get('requests_made', 0) * 10))
                     
-                    # Store raw results
-                    current_scan.results = results
-                    
-                    # Generate NLP analysis of vulnerabilities
-                    nlp_analysis = analyze_scan_results(vulns)
-                    current_scan.nlp_summary = nlp_analysis.get('summary', 'Analysis not available')
-                    
-                    # Store additional NLP insights in results
-                    results['nlp_analysis'] = nlp_analysis
-                    current_scan.results = results
-                    
-                    # Create individual vulnerability records
-                    for vuln_data in vulns:
-                        vulnerability = Vulnerability(
-                            scan_id=scan_id,
-                            name=vuln_data.get('title', 'Unknown'),
-                            description=vuln_data.get('description', ''),
-                            risk_level=vuln_data.get('severity', 'Low'),
-                            confidence=str(vuln_data.get('confidence', 0)),
-                            url=vuln_data.get('url', ''),
-                            parameter=vuln_data.get('parameter', ''),
-                            method=vuln_data.get('method', 'GET'),
-                            attack=vuln_data.get('payload', ''),
-                            evidence=vuln_data.get('evidence', ''),
-                            solution=vuln_data.get('solution', '')
-                        )
-                        db.session.add(vulnerability)
-                
-                elif results.get('status') == 'failed':
-                    current_scan.error_message = results.get('error', 'Scan failed')
-                
-                # Update progress percentage
-                if results.get('requests_made', 0) > 0:
-                    current_scan.progress_percentage = min(100, (results.get('requests_made', 0) * 10))
-                
-                db.session.commit()
+                    db.session.commit()
+                    print(f"Updated scan {scan_id} status: {results.get('status')}")
         
         # Start the actual security scan
         scan.status = 'running'
@@ -545,12 +567,14 @@ def get_feedback():
         return jsonify({'error': 'Internal server error'}), 500
 
 @app.route('/scan/progress/<scan_id>', methods=['GET'])
+@app.route('/scan/<scan_id>/progress', methods=['GET'])
 @jwt_required()
 @limiter.limit("30 per minute")
 def scan_progress(scan_id):
     """Get real-time scan progress"""
     try:
         user_id = get_jwt_identity()
+        print(f"DEBUG: Progress request for scan {scan_id} from user {user_id}")
         scan = Scan.query.filter_by(id=scan_id, user_id=user_id).first()
         
         if not scan:
@@ -797,11 +821,12 @@ def handle_rate_limit_exceeded(e):
 
 # Initialize premium and advanced features
 init_premium_routes(app)
+init_scan_analytics_routes(app, limiter)
 init_advanced_routes(app)
 # Removed - merged into advanced_features
 
 # Initialize advanced analytics and real-time features
-socketio = init_advanced_analytics(app)
+init_advanced_analytics(app)
 init_analytics_routes(app)
 
 # Initialize August 17th features
@@ -811,7 +836,8 @@ init_aug17_routes(app)
 init_aug18_routes(app)
 
 # Initialize August 19th features
-init_aug19_routes(app)
+# Temporarily disabled due to route conflicts with scan_analytics
+# init_aug19_routes(app)
 
 # Initialize August 19th enhancements
 try:
@@ -939,30 +965,42 @@ if __name__ == '__main__':
     print("\nDefault users:")
     print("- admin@websecpen.com / admin123 (admin)")
     print("- test@example.com / test123 (user)")
+    print("- Socket.IO enabled for real-time scan progress")
     
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    # Temporarily disable Socket.IO for testing
+    app.run(debug=False, host='0.0.0.0', port=5000, threaded=True)
 
 # Add Socket.io endpoint
-@app.route('/socket.io/')
-def socketio_endpoint():
-    return jsonify({'message': 'Socket.io endpoint'}), 200
+ # Socket.IO event handlers
+@socketio.on('connect')
+def handle_connect():
+    print(f'Client connected: {request.sid}')
+    emit('connected', {'status': 'Connected to WebSecPen'})
 
-if __name__ == '__main__':
-    print("WebSecPen API starting...")
-    print("Available endpoints:")
-    print("- POST /auth/login - User login")
-    print("- POST /auth/register - User registration")
-    print("- GET /auth/profile - Get user profile")
-    print("- POST /scan/start - Start new scan")
-    print("- GET /scan/result/<id> - Get scan results")
-    print("- GET /scan/status/<id> - Get scan status")
-    print("- GET /scans - Get all user scans")
-    print("- GET /health - Health check")
-    print("\nDefault users:")
-    print("- admin@websecpen.com / admin123 (admin)")
-    print("- test@example.com / test123 (user)")
-    
-    app.run(debug=True, host='0.0.0.0', port=5000)
+@socketio.on('disconnect')
+def handle_disconnect():
+    print(f'Client disconnected: {request.sid}')
+
+@socketio.on('join_scan')
+def handle_join_scan(data):
+    scan_id = data.get('scan_id')
+    if scan_id:
+        join_room(f'scan_{scan_id}')
+        print(f'Client {request.sid} joined scan room: scan_{scan_id}')
+        emit('joined_scan', {'scan_id': scan_id, 'room': f'scan_{scan_id}'})
+
+@socketio.on('leave_scan')
+def handle_leave_scan(data):
+    scan_id = data.get('scan_id')
+    if scan_id:
+        leave_room(f'scan_{scan_id}')
+        print(f'Client {request.sid} left scan room: scan_{scan_id}')
+
+def emit_scan_progress(scan_id, progress_data):
+    """Emit scan progress to all clients in the scan room"""
+    socketio.emit('scan_progress', progress_data, room=f'scan_{scan_id}')
+
+# First main block removed - duplicate
 
 # JWT Error Handlers
 @jwt.expired_token_loader

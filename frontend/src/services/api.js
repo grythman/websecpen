@@ -7,26 +7,26 @@ const API_BASE_URL = import.meta.env.PROD ? (import.meta.env.VITE_API_BASE_URL |
 class ApiService {
   constructor() {
     this.baseURL = API_BASE_URL;
-    this.token = localStorage.getItem('auth_token');
+    this.token = localStorage.getItem('authToken');
   }
 
   // Set authentication token
   setToken(token) {
     this.token = token;
-    localStorage.setItem('auth_token', token);
+    localStorage.setItem('authToken', token);
     console.log('Token set:', token ? 'Token present' : 'No token');
   }
 
   // Remove authentication token
   removeToken() {
     this.token = null;
-    localStorage.removeItem('auth_token');
+    localStorage.removeItem('authToken');
     console.log('Token removed');
   }
     // Initialize auth state from localStorage
     async initializeAuth() {
       try {
-        const storedToken = localStorage.getItem('auth_token');
+        const storedToken = localStorage.getItem('authToken');
         const storedUser = localStorage.getItem('user');
         
         if (storedToken && storedUser) {
@@ -211,12 +211,15 @@ class ApiService {
   }
 
   async getScanProgress(scanId) {
-    return {
-      scanId: scanId || 'undefined',
-      status: 'completed',
-      progress: 100,
-      results: []
-    };
+    const response = await fetch(`${this.baseURL}/scan/${scanId}/progress`, {
+      headers: this.getAuthHeaders()
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to get scan progress: ${response.statusText}`);
+    }
+    
+    return await response.json();
   }
 
   async getScanTrends(days = 30) {

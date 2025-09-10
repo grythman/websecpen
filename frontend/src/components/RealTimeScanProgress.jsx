@@ -9,6 +9,16 @@ const RealTimeScanProgress = ({ scanId, onComplete }) => {
   const [socket, setSocket] = useState(null);
   const [startTime, setStartTime] = useState(new Date());
 
+  // Don't render if scanId is undefined
+  if (!scanId) {
+    return (
+      <div className="scan-progress-error">
+        <h3>⚠️ Scan ID Missing</h3>
+        <p>Unable to track scan progress. Please start a new scan.</p>
+      </div>
+    );
+  }
+
   useEffect(() => {
     // Initialize socket connection
     const socketConnection = io(process.env.REACT_APP_API_URL || 'http://localhost:5000');
@@ -20,8 +30,8 @@ const RealTimeScanProgress = ({ scanId, onComplete }) => {
     // Listen for progress updates
     socketConnection.on('scan_progress', (data) => {
       if (data.scan_id === scanId) {
-        setProgress(data.progress);
-        setStatus(data.status);
+        setProgress(data.progress || 0);
+        setStatus(data.status || 'running');
         setEstimatedCompletion(data.estimated_completion);
         
         if (data.status === 'completed' && onComplete) {
@@ -44,7 +54,7 @@ const RealTimeScanProgress = ({ scanId, onComplete }) => {
 
   const fetchProgress = async () => {
     try {
-      const token = localStorage.getItem('auth_token');
+      const token = localStorage.getItem('authToken');
       const response = await fetch(`/api/scan/${scanId}/progress`, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -54,9 +64,9 @@ const RealTimeScanProgress = ({ scanId, onComplete }) => {
 
       if (response.ok) {
         const data = await response.json();
-        setProgress(data.progress);
+        setProgress(data.progress_percentage || data.progress || 0);
         setStatus(data.status);
-        setEstimatedCompletion(data.estimated_completion);
+        setEstimatedCompletion(data.estimated_time_remaining || data.estimated_completion);
       }
     } catch (error) {
       console.error('Error fetching progress:', error);
@@ -152,7 +162,7 @@ const RealTimeScanProgress = ({ scanId, onComplete }) => {
             />
           </div>
           <div className="progress-text">
-            {progress.toFixed(1)}%
+            {(progress || 0).toFixed(1)}%
           </div>
         </div>
 
