@@ -2,6 +2,3 @@
 .section-title { font-size: var(--text-h2); line-height: var(--line-h2); }
 .section-actions { display: flex; gap: var(--space-3); }
 .section-body { display: block; } 
-.section-title { font-size: var(--text-h2); line-height: var(--line-h2); }
-.section-actions { display: flex; gap: var(--space-3); }
-.section-body { display: block; } 

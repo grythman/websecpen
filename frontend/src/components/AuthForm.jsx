@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext.jsx';
 import { useError } from '../context/ErrorContext.jsx';
 import Logo from './Logo.jsx';
 import './AuthForm.css';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 const AuthForm = ({ onSuccess }) => {
   const [mode, setMode] = useState('login'); // 'login' or 'register'
@@ -25,6 +26,8 @@ const AuthForm = ({ onSuccess }) => {
   const { login, register } = useAuth();
   const { addError } = useError();
   const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const validateEmail = (email) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -64,6 +67,7 @@ const AuthForm = ({ onSuccess }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isLoading) return;
     setError('');
 
     if (!validateForm()) return;
@@ -84,11 +88,11 @@ const AuthForm = ({ onSuccess }) => {
       }
       
       if (result.success) {
-        if (onSuccess) {
-          onSuccess();
-        }
+        const redirectTo = location.state?.from?.pathname || '/';
+        if (onSuccess) onSuccess();
+        navigate(redirectTo, { replace: true });
       } else {
-        setError(result.message || `${mode === 'login' ? 'Login' : 'Registration'} failed. Please try again.`);
+        setError(result.error || `${mode === 'login' ? 'Login' : 'Registration'} failed. Please try again.`);
       }
       
     } catch (err) {

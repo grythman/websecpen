@@ -40,13 +40,3 @@ const AdminGuard = ({ children, fallback = null }) => {
 };
 
 export default AdminGuard;
-
-
-  if (!user || !isAdmin) {
-    return fallback || <div>Admin access required.</div>;
-  }
-
-  return children;
-};
-
-export default AdminGuard;

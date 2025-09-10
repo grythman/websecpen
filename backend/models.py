@@ -450,7 +450,7 @@ def init_db(app):
             admin_user.set_password('admin123')
             db.session.add(admin_user)
         
-        # Create test user if not exists
+        # Create test user if not exists (legacy domain)
         test_user = User.query.filter_by(email='test@websecpen.com').first()
         if not test_user:
             test_user = User(
@@ -463,6 +463,20 @@ def init_db(app):
             )
             test_user.set_password('test123')
             db.session.add(test_user)
+
+        # Create example.com test user to match frontend docs
+        test_example_user = User.query.filter_by(email='test@example.com').first()
+        if not test_example_user:
+            test_example_user = User(
+                email='test@example.com',
+                first_name='Test',
+                last_name='User',
+                role='premium',
+                scan_limit=50,
+                preferences={"notifications": True, "has_seen_tutorial": False}
+            )
+            test_example_user.set_password('test123')
+            db.session.add(test_example_user)
         
         db.session.commit()
         print("Database initialized successfully!")

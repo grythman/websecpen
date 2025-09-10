@@ -2,7 +2,7 @@
 // Enhanced integration with all backend endpoints
 
 // Use relative URLs in development to work with Vite proxy
-const API_BASE_URL = import.meta.env.PROD ? 'http://localhost:5000' : '';
+const API_BASE_URL = import.meta.env.PROD ? (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000') : '';
 
 class ApiService {
   constructor() {
@@ -68,8 +68,9 @@ class ApiService {
       ...options,
     };
 
-    // Add authorization header if token exists
-    if (this.token) {
+    // Add authorization header unless explicitly skipped
+    const shouldAttachAuth = !!this.token && !options.skipAuth;
+    if (shouldAttachAuth) {
       config.headers.Authorization = `Bearer ${this.token}`;
       console.log('Request with token to:', url);
     } else {
@@ -82,7 +83,7 @@ class ApiService {
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         console.error('API Error:', response.status, errorData);
-        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+        throw new Error(errorData.error || errorData.message || `HTTP error! status: ${response.status}`);
       }
 
       const contentType = response.headers.get('content-type');
@@ -102,6 +103,7 @@ class ApiService {
     const response = await this.request('/auth/login', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
+      skipAuth: true,
     });
     
     if (response.access_token) {
@@ -115,6 +117,7 @@ class ApiService {
     return await this.request('/auth/register', {
       method: 'POST',
       body: JSON.stringify(userData),
+      skipAuth: true,
     });
   }
 
@@ -142,6 +145,14 @@ class ApiService {
 
   async getScanResult(scanId) {
     return await this.request(`/scan/result/${scanId}`);
+  }
+
+  async getRemediationSuggestion(scanId, vulnId) {
+    return await this.request(`/scan/${scanId}/vuln/${vulnId}/remediation`, { method: 'POST' });
+  }
+
+  async sendScanToTenable(scanId) {
+    return await this.request(`/scan/${scanId}/tenable`, { method: 'POST' });
   }
 
   async getScans() {

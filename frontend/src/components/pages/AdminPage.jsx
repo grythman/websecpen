@@ -6,6 +6,7 @@ import AdminDashboard from '../AdminDashboard.jsx';
 import AdminFeedback from '../AdminFeedback.jsx';
 import AdminHeatmap from '../AdminHeatmap.jsx';
 import VulnerabilityTagManager from '../VulnerabilityTagManager.jsx';
+import AdminEngagementMetrics from '../AdminEngagementMetrics.jsx';
 
 const AdminPage = () => {
   const [loading, setLoading] = useState(true);
@@ -22,6 +23,9 @@ const AdminPage = () => {
       </Section>
       <Section title="System Dashboard">
         {loading ? <Skeleton height={260} /> : <AdminDashboard />}
+      </Section>
+      <Section title="Engagement Metrics">
+        {loading ? <Skeleton height={220} /> : <AdminEngagementMetrics />}
       </Section>
       <Section title="Feedback">
         {loading ? <Skeleton height={260} /> : <AdminFeedback />}

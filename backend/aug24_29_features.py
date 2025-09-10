@@ -1480,6 +1480,7 @@ def init_aug24_29_routes(app):
     init_ai_prioritization(app)
     init_feedback_system(app)
     init_remediation_ai(app)
+    init_vuln_remediation_endpoint(app)
     init_dashboard_customization(app)
     init_advanced_scheduling(app)
     init_api_key_management(app)

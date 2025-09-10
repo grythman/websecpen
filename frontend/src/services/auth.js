@@ -102,8 +102,9 @@ class AuthService {
           // Notify listeners immediately with stored data
           this.notifyListeners();
           
-          // Verify token is still valid and refresh user data
+          // Verify token is still valid and refresh user data (guarded against double calls)
         try {
+            if (!this.token) return false;
             const profileResponse = await apiService.getProfile();
             this.user = profileResponse.user || profileResponse;
           localStorage.setItem('user', JSON.stringify(this.user));

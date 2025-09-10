@@ -14,157 +14,21 @@
 
 .language-switcher-container.inline {
   position: relative;
-}
-
-.language-switcher-container.small .lang-switch-btn {
-  padding: 4px 8px;
-  font-size: 10px;
-  min-width: 40px;
-}
-
-.language-switcher-container.large .lang-switch-btn {
-  padding: 10px 14px;
-  font-size: 14px;
-  min-width: 60px;
-}
-
-.lang-switch-btn {
-  background: rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 20px;
-  padding: 6px 10px;
-  font-size: 11px;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.9);
-  cursor: pointer;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  min-width: 50px;
-  justify-content: center;
-}
-
-.lang-switch-btn:hover {
-  background: rgba(255, 255, 255, 0.25);
-  color: white;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.lang-switch-btn.active {
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  color: white;
-  border-color: transparent;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-}
-
-.lang-switch-btn .flag {
-  font-size: 14px;
-  line-height: 1;
-}
-
-.lang-switch-btn .short {
-  font-size: inherit;
-  font-weight: 600;
-  line-height: 1;
-}
-
-/* Dark theme adjustments */
-.language-switcher-container.dark .lang-switch-btn {
-  background: rgba(0, 0, 0, 0.3);
-  border-color: rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.8);
-}
-
-.language-switcher-container.dark .lang-switch-btn:hover {
-  background: rgba(0, 0, 0, 0.4);
-  color: white;
-}
-
-/* Responsive design */
-@media (max-width: 768px) {
-  .language-switcher-container.fixed {
-    top: 15px;
-    right: 15px;
-  }
-  
-  .lang-switch-btn {
-    padding: 4px 8px;
-    font-size: 10px;
-    min-width: 45px;
-  }
-  
-  .lang-switch-btn .flag {
-    font-size: 12px;
-  }
-}
-
-@media (max-width: 480px) {
-  .language-switcher-container.fixed {
-    top: 10px;
-    right: 10px;
-  }
-  
-  .lang-switch-btn {
-    padding: 3px 6px;
-    font-size: 9px;
-    min-width: 35px;
-    gap: 2px;
-  }
-  
-  .lang-switch-btn .flag {
-    font-size: 10px;
-  }
-}
-
-/* Focus styles for accessibility */
-.lang-switch-btn:focus {
-  outline: 2px solid #667eea;
-  outline-offset: 2px;
-}
-
-/* Animation */
-@keyframes langSwitch {
-  0% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.05);
-  }
-  100% {
-    transform: scale(1);
-  }
-}
-
-.lang-switch-btn.active {
-  animation: langSwitch 0.3s ease-in-out;
-}
-
-/* Reduced motion */
-@media (prefers-reduced-motion: reduce) {
-  .lang-switch-btn,
-  .lang-switch-btn.active {
-    transition: none;
-    animation: none;
-  }
-} 
-
-.language-switcher-container {
   display: flex;
   gap: 6px;
-  z-index: 1000;
 }
 
-.language-switcher-container.fixed {
-  position: fixed;
-  top: 20px;
-  right: 20px;
+.language-switcher-container.inline .lang-switch-btn {
+  padding: 6px 8px;
+  border-radius: 10px;
 }
 
-.language-switcher-container.inline {
-  position: relative;
+.language-switcher-container.compact .flag {
+  display: none;
+}
+
+.language-switcher-container.compact .short {
+  font-weight: 700;
 }
 
 .language-switcher-container.small .lang-switch-btn {
@@ -220,6 +84,10 @@
   font-size: inherit;
   font-weight: 600;
   line-height: 1;
+}
+
+.language-switcher-container.inline .lang-switch-btn.active {
+  outline: 2px solid rgba(255,255,255,0.5);
 }
 
 /* Dark theme adjustments */

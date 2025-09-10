@@ -1,0 +1,13 @@
+.engagement-metrics { display: flex; flex-direction: column; gap: 12px; }
+.em-header h3 { margin: 0; font-size: 1.1rem; }
+.em-error { color: var(--danger-600, #d33); font-size: 0.9rem; }
+.em-placeholder { height: 160px; display: grid; place-items: center; background: var(--surface-2, rgba(255,255,255,0.04)); border-radius: var(--radius-md, 12px); }
+.em-chart { position: relative; display: grid; grid-auto-flow: column; gap: 4px; height: 180px; align-items: end; padding: 8px; background: var(--surface-2, rgba(255,255,255,0.04)); border-radius: var(--radius-md, 12px); }
+.em-bar-group { display: grid; grid-auto-flow: column; gap: 2px; align-items: end; }
+.em-bar { width: 6px; border-radius: 6px 6px 0 0; opacity: 0.9; }
+.em-bar-scans { background: var(--primary-500, #7c5cff); }
+.em-bar-feedback { background: var(--accent-500, #26c6da); }
+.em-legend { position: absolute; right: 8px; top: 8px; display: flex; gap: 12px; align-items: center; font-size: 0.8rem; opacity: 0.9; }
+.em-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+.em-dot.scans { background: var(--primary-500, #7c5cff); }
+.em-dot.feedback { background: var(--accent-500, #26c6da); } 

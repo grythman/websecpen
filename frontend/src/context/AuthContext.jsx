@@ -119,7 +119,10 @@ export function AuthProvider({ children }) {
 
   // Initialize auth on mount
   useEffect(() => {
+    let didInit = false;
     const initializeAuth = async () => {
+      if (didInit) return; // avoid double init in StrictMode
+      didInit = true;
       dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: { loading: true } });
       
       try {

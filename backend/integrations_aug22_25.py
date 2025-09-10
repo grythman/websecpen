@@ -12,6 +12,12 @@ from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 from sqlalchemy import or_
 
 from models import db, User, Scan, TeamMember, ApiKey
+# Add imports for encrypted integration keys
+try:
+    from aug24_29_features import IntegrationApiKey, fernet
+except Exception:
+    IntegrationApiKey = None
+    fernet = None
 
 # =============================================================================
 # SERVICENOW INTEGRATION
@@ -636,6 +642,82 @@ def init_reminder_system(app):
             return f'{days} days'
 
 # =============================================================================
+# TENABLE.IO INTEGRATION
+# =============================================================================
+
+def init_tenable_integration(app):
+    """Initialize Tenable.io integration routes"""
+    
+    @app.route('/api/scan/<int:scan_id>/tenable', methods=['POST'])
+    @jwt_required()
+    def send_to_tenable(scan_id):
+        """Send scan summary to Tenable.io"""
+        user_id = get_jwt_identity()
+        
+        # Verify scan access
+        scan = Scan.query.filter(
+            Scan.id == scan_id,
+            or_(
+                Scan.user_id == user_id,
+                Scan.team_id.in_(
+                    db.session.query(TeamMember.team_id).filter(TeamMember.user_id == user_id)
+                )
+            )
+        ).first()
+        
+        if not scan:
+            return jsonify({'error': 'Scan not found'}), 404
+        
+        # Get credentials from encrypted store
+        access_key = None
+        secret_key = None
+        if IntegrationApiKey and fernet:
+            api_key_row = IntegrationApiKey.query.filter_by(user_id=user_id, integration_name='tenable').first()
+            if api_key_row:
+                try:
+                    creds_json = fernet.decrypt(api_key_row.encrypted_credentials.encode()).decode()
+                    creds = json.loads(creds_json)
+                    access_key = creds.get('access_key') or creds.get('ACCESS_KEY')
+                    secret_key = creds.get('secret_key') or creds.get('SECRET_KEY')
+                except Exception as e:
+                    app.logger.error(f'Failed to decrypt Tenable credentials: {e}')
+        
+        if not access_key or not secret_key:
+            return jsonify({'error': 'Tenable.io credentials not configured'}), 400
+        
+        tenable_url = os.environ.get('TENABLE_API_URL', 'https://cloud.tenable.com')
+        headers = {
+            'X-ApiKeys': f'accessKey={access_key};secretKey={secret_key}',
+            'Content-Type': 'application/json'
+        }
+        
+        alerts = (scan.results or {}).get('alerts', []) if scan.results else []
+        payload = {
+            'scan_name': f'WebSecPen_Scan_{scan.id}',
+            'target': scan.target_url,
+            'vulnerabilities': []
+        }
+        
+        # Convert to a basic structure Tenable can ingest (placeholder mapping)
+        for a in alerts:
+            payload['vulnerabilities'].append({
+                'plugin_id': a.get('pluginid') or a.get('id') or 0,
+                'name': a.get('name') or 'Unknown',
+                'description': a.get('desc') or a.get('description') or '',
+                'severity': (a.get('risk') or 'medium').lower()
+            })
+        
+        try:
+            resp = requests.post(f'{tenable_url}/scans/import', headers=headers, json=payload, timeout=15)
+            if resp.status_code >= 200 and resp.status_code < 300:
+                return jsonify({'message': 'Data sent to Tenable.io'}), 201
+            app.logger.error(f'Tenable error {resp.status_code}: {resp.text}')
+            return jsonify({'error': 'Tenable.io API error'}), 502
+        except Exception as e:
+            app.logger.error(f'Tenable request failed: {e}')
+            return jsonify({'error': 'Failed to send data to Tenable.io'}), 500
+
+# =============================================================================
 # MAIN INITIALIZATION FUNCTION
 # =============================================================================
 
@@ -648,6 +730,11 @@ def init_all_integrations(app):
     init_zapier_integration(app)
     init_slack_integration(app)
     init_reminder_system(app)
+    # Register Tenable integration
+    try:
+        init_tenable_integration(app)
+    except Exception as e:
+        print(f"Tenable integration init failed: {e}")
     
     print("✅ External integrations initialized successfully!")
     print("🔧 Integrations: ServiceNow, PagerDuty, Zapier, Slack, Reminders")

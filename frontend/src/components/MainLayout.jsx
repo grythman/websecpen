@@ -3,6 +3,7 @@ import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { ThemeContext } from '../context/ThemeContext.jsx';
 import Logo from './Logo.jsx';
+import LanguageSwitcher from './LanguageSwitcher.jsx';
 import '../components/ModernNavigation.css';
 
 const MainLayout = () => {
@@ -32,13 +33,19 @@ const MainLayout = () => {
     { key: 'admin', label: 'Admin', icon: '⚙️', roles: ['admin'], gradient: 'red', path: '/admin' }
   ];
 
-  const userRole = user?.role || 'user';
+  const userRole = user?.role || (user?.is_admin ? 'admin' : 'user');
   const filteredMenuItems = menuItems.filter(item => item.roles.includes(userRole));
+
+  const userInitial = user?.first_name?.charAt(0) || user?.email?.charAt(0) || 'A';
+  const userName = user?.first_name || user?.email?.split('@')[0] || 'Admin';
+  const userEmail = user?.email || '';
+  const isAdmin = user?.is_admin === true || user?.role === 'admin';
 
   return (
     <div className="app-container">
       <nav className={`modern-navigation ${theme}`}>
-        <div className="nav-brand">
+        <div className="nav-brand" onClick={() => navigate('/')}
+             style={{ cursor: 'pointer' }}>
           <div className="brand-logo">
             <Logo size="medium" />
           </div>
@@ -54,6 +61,7 @@ const MainLayout = () => {
               key={item.key}
               className={`nav-item ${currentView === item.key ? 'active' : ''} ${item.gradient}`}
               onClick={() => navigate(item.path)}
+              title={item.label}
             >
               <div className="nav-item-content">
                 <span className="nav-icon">{item.icon}</span>
@@ -65,6 +73,7 @@ const MainLayout = () => {
         </div>
 
         <div className="nav-actions">
+          <LanguageSwitcher position="inline" size="compact" />
           <div className="action-controls">
             <button onClick={toggleTheme} className="control-btn theme-toggle" title="Toggle Theme">
               <span className="control-icon">{theme === 'dark' ? '☀️' : '🌙'}</span>
@@ -74,15 +83,16 @@ const MainLayout = () => {
               <span className="notification-badge">3</span>
             </div>
           </div>
-          <div className="user-section">
+          <div className="user-section" title={userEmail}>
             <div className="user-avatar">
-              <span className="avatar-text">{user?.first_name?.charAt(0) || user?.email?.charAt(0) || 'A'}</span>
+              <span className="avatar-text">{userInitial}</span>
               <div className="status-indicator online"></div>
             </div>
             <div className="user-details">
-              <span className="user-name">{user?.first_name || user?.email?.split('@')[0] || 'Admin'}</span>
-              <span className="user-role">{user?.role === 'admin' ? 'Administrator' : 'Security Analyst'}</span>
+              <span className="user-name">{userName}</span>
+              <span className="user-role">{isAdmin ? 'Administrator' : 'Security Analyst'}</span>
             </div>
+            {isAdmin && <span className="badge-admin">Admin</span>}
             <button onClick={logout} className="logout-btn" title="Logout">
               <span className="logout-icon">🚪</span>
             </button>
@@ -97,4 +107,4 @@ const MainLayout = () => {
   );
 };
 
-export default MainLayout;
+export default MainLayout; 

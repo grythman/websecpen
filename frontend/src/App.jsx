@@ -55,7 +55,7 @@ const AppRoutes = () => (
 
     <Route path="*" element={<Navigate to="/" replace />} />
   </Routes>
-  );
+);
 
 const App = () => {
   return (
@@ -64,7 +64,7 @@ const App = () => {
         <AuthProvider>
           <ErrorDisplay />
           <ErrorBoundary>
-            <BrowserRouter>
+            <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
               <AppRoutes />
               <CommandPalette />
             </BrowserRouter>

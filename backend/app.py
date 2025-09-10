@@ -10,6 +10,7 @@ from datetime import datetime, timedelta
 import re
 import os
 import uuid
+from collections import defaultdict
 
 # Monitoring and error tracking
 import sentry_sdk
@@ -47,7 +48,7 @@ if sentry_dsn:
 # Configuration
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///websecpen.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', os.urandom(32).hex())
+app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', 'dev-insecure-change-me')
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=24)
 app.config['JWT_CSRF_PROTECT'] = False  # Disable CSRF for API usage
 app.config['JWT_TOKEN_LOCATION'] = ['headers']
@@ -829,6 +830,7 @@ except ImportError as e:
 # Initialize External Integrations
 try:
     from integrations_aug22_25 import init_all_integrations
+    init_all_integrations(app)
 except ImportError as e:
     print(f"External integrations not available: {e}")
 
@@ -974,4 +976,45 @@ def invalid_token_callback(error):
 @jwt.unauthorized_loader
 def missing_token_callback(error):
     return jsonify({'error': f'Missing token: {error}'}), 401
+
+@app.route('/api/admin/engagement_metrics', methods=['GET'])
+@jwt_required()
+def get_engagement_metrics():
+    """Return daily counts of feedback and scans for the last 30 days (admin only)."""
+    try:
+        user_id = get_jwt_identity()
+        user = User.query.get(user_id)
+        if not user or not user.is_admin:
+            return jsonify({'error': 'Admin access required'}), 403
+        
+        start_date = datetime.utcnow() - timedelta(days=30)
+        # Fetch relevant records
+        feedback = Feedback.query.filter(Feedback.created_at >= start_date).all()
+        scans = Scan.query.filter(Scan.created_at >= start_date).all()
+        
+        metrics = defaultdict(lambda: {'feedback': 0, 'scans': 0})
+        
+        for f in feedback:
+            key = (f.created_at or start_date).strftime('%Y-%m-%d')
+            metrics[key]['feedback'] += 1
+        for s in scans:
+            key = (s.created_at or start_date).strftime('%Y-%m-%d')
+            metrics[key]['scans'] += 1
+        
+        # Ensure continuous date sequence
+        dates = []
+        today = datetime.utcnow().date()
+        for i in range(30):
+            d = (today - timedelta(days=29 - i)).strftime('%Y-%m-%d')
+            dates.append(d)
+            metrics.setdefault(d, {'feedback': 0, 'scans': 0})
+        
+        return jsonify({
+            'dates': dates,
+            'feedback': [metrics[d]['feedback'] for d in dates],
+            'scans': [metrics[d]['scans'] for d in dates]
+        }), 200
+    except Exception as e:
+        print(f"Error getting engagement metrics: {str(e)}")
+        return jsonify({'error': 'Internal server error'}), 500
 

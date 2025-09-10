@@ -54,4 +54,4 @@ const FilterBar = ({ initial = defaultFilters, onChange }) => {
   );
 };
 
-export default FilterBar;
+export default FilterBar; 

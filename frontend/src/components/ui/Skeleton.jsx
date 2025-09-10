@@ -10,4 +10,4 @@ const Skeleton = ({ width = '100%', height = 16, circle = false, style = {} }) =
   );
 };
 
-export default Skeleton;
+export default Skeleton; 
