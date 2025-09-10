@@ -46,13 +46,7 @@ const MainLayout = () => {
       <nav className={`modern-navigation ${theme}`}>
         <div className="nav-brand" onClick={() => navigate('/')}
              style={{ cursor: 'pointer' }}>
-          <div className="brand-logo">
-            <Logo size="medium" />
-          </div>
-          <div className="brand-info">
-            <h1 className="brand-title">WebSecPen</h1>
-            <span className="brand-subtitle">Security Platform</span>
-          </div>
+          <Logo size="medium" showText={true} />
         </div>
 
         <div className="nav-menu">

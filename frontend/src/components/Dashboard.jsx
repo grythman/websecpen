@@ -80,12 +80,6 @@ const Dashboard = () => {
   return (
     <div className={`modern-dashboard ${theme}`}>
       {/* Language Switcher - positioned fixed */}
-      <div className="dashboard-controls">
-        <LanguageSwitcher position="fixed" size="small" className={theme} />
-        <button className="theme-toggle-fixed" onClick={toggleTheme}>
-          {theme === 'dark' ? '☀️' : '🌙'}
-        </button>
-      </div>
       
       {/* Main Content */}
       <main className="dashboard-main-content">
