@@ -1,7 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import './NotificationPreferences.css';
+import './NotificationDropdown.css';
 
-const NotificationPreferences = () => {
+const NotificationPreferences = ({ 
+  isDropdown = false, 
+  onClose = null,
+  showRecentNotifications = false 
+}) => {
   const [settings, setSettings] = useState({
     email: true,
     in_app: true,
@@ -12,6 +17,13 @@ const NotificationPreferences = () => {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
+  
+  // Recent notifications for dropdown mode
+  const [recentNotifications, setRecentNotifications] = useState([
+    { id: 1, type: 'warning', title: 'High Risk Vulnerability', message: 'SQL injection detected on login form', time: '2 min ago', unread: true },
+    { id: 2, type: 'success', title: 'Scan Completed', message: 'Weekly security scan finished successfully', time: '1 hour ago', unread: true },
+    { id: 3, type: 'info', title: 'Team Update', message: 'New team member added to project', time: '3 hours ago', unread: false }
+  ]);
 
   useEffect(() => {
     fetchSettings();
@@ -90,6 +102,33 @@ const NotificationPreferences = () => {
     });
   };
 
+  // Notification management functions
+  const markNotificationAsRead = (id) => {
+    setRecentNotifications(prev => 
+      prev.map(notif => 
+        notif.id === id ? { ...notif, unread: false } : notif
+      )
+    );
+  };
+
+  const removeNotification = (id) => {
+    setRecentNotifications(prev => prev.filter(notif => notif.id !== id));
+  };
+
+  const clearAllNotifications = () => {
+    setRecentNotifications([]);
+  };
+
+  const getNotificationIcon = (type) => {
+    switch (type) {
+      case 'warning': return '⚠️';
+      case 'success': return '✅';
+      case 'error': return '❌';
+      case 'info': return 'ℹ️';
+      default: return '📢';
+    }
+  };
+
   if (loading) {
     return (
       <div className="notification-preferences loading">
@@ -101,6 +140,82 @@ const NotificationPreferences = () => {
     );
   }
 
+  // Render as dropdown panel
+  if (isDropdown) {
+    return (
+      <div className="notification-dropdown-panel">
+        <div className="dropdown-header">
+          <h3>Notifications</h3>
+          <div className="dropdown-actions">
+            {recentNotifications.length > 0 && (
+              <button onClick={clearAllNotifications} className="clear-all-btn">
+                Clear All
+              </button>
+            )}
+            {onClose && (
+              <button onClick={onClose} className="close-btn">
+                ✕
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div className="notification-list">
+          {recentNotifications.length === 0 ? (
+            <div className="no-notifications">
+              <span className="no-notifications-icon">🔔</span>
+              <p>No new notifications</p>
+              <small>You're all caught up!</small>
+            </div>
+          ) : (
+            recentNotifications.map(notification => (
+              <div 
+                key={notification.id} 
+                className={`notification-item ${notification.type} ${notification.unread ? 'unread' : ''}`}
+              >
+                <div className="notification-content">
+                  <div className="notification-icon">
+                    {getNotificationIcon(notification.type)}
+                  </div>
+                  <div className="notification-text">
+                    <h4 className="notification-title">{notification.title}</h4>
+                    <p className="notification-message">{notification.message}</p>
+                    <span className="notification-time">{notification.time}</span>
+                  </div>
+                </div>
+                <div className="notification-actions">
+                  {notification.unread && (
+                    <button 
+                      className="mark-read-btn"
+                      onClick={() => markNotificationAsRead(notification.id)}
+                      title="Mark as read"
+                    >
+                      👁️
+                    </button>
+                  )}
+                  <button 
+                    className="remove-btn"
+                    onClick={() => removeNotification(notification.id)}
+                    title="Remove notification"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        <div className="dropdown-footer">
+          <button className="view-settings-btn" onClick={() => window.location.href = '/profile'}>
+            ⚙️ Notification Settings
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Render as full page component
   return (
     <div className="notification-preferences">
       <div className="preferences-header">

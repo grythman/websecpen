@@ -1,3 +1,234 @@
+/* Dropdown Panel Styles */
+.notification-dropdown-panel {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  width: 380px;
+  max-height: 500px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 16px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  z-index: 1001;
+  overflow: hidden;
+  animation: slideInFromTop 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.modern-navigation.dark .notification-dropdown-panel {
+  background: rgba(45, 55, 72, 0.95);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+@keyframes slideInFromTop {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.dropdown-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.dropdown-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1a202c;
+}
+
+.modern-navigation.dark .dropdown-header h3 {
+  color: #f7fafc;
+}
+
+.dropdown-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.clear-all-btn, .close-btn {
+  padding: 0.25rem 0.75rem;
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: 8px;
+  color: #3b82f6;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.close-btn {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.clear-all-btn:hover, .close-btn:hover {
+  background: rgba(59, 130, 246, 0.2);
+  transform: translateY(-1px);
+}
+
+.close-btn:hover {
+  background: rgba(239, 68, 68, 0.2);
+}
+
+.dropdown-header .notification-list {
+  max-height: 350px;
+  overflow-y: auto;
+}
+
+.dropdown-header .no-notifications {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1.5rem;
+  text-align: center;
+  color: #64748b;
+}
+
+.no-notifications-icon {
+  font-size: 2.5rem;
+  margin-bottom: 0.75rem;
+  opacity: 0.5;
+}
+
+.notification-item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.2s ease;
+}
+
+.notification-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.notification-item.unread {
+  background: rgba(59, 130, 246, 0.05);
+  border-left: 4px solid #3b82f6;
+}
+
+.notification-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  flex: 1;
+}
+
+.notification-icon {
+  font-size: 1.25rem;
+  margin-top: 0.125rem;
+}
+
+.notification-text {
+  flex: 1;
+}
+
+.notification-title {
+  margin: 0 0 0.25rem 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #1a202c;
+  line-height: 1.3;
+}
+
+.modern-navigation.dark .notification-title {
+  color: #f7fafc;
+}
+
+.notification-message {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.8rem;
+  color: #64748b;
+  line-height: 1.4;
+}
+
+.notification-time {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.notification-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.mark-read-btn, .remove-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background: rgba(148, 163, 184, 0.1);
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.8rem;
+}
+
+.mark-read-btn:hover {
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+}
+
+.remove-btn:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+.dropdown-footer {
+  padding: 0.75rem 1.25rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.view-settings-btn {
+  width: 100%;
+  padding: 0.5rem;
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: 8px;
+  color: #3b82f6;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.view-settings-btn:hover {
+  background: rgba(59, 130, 246, 0.2);
+  transform: translateY(-1px);
+}
+
+/* Original Full Page Styles */
 .notification-preferences {
   max-width: 800px;
   margin: 0 auto;
