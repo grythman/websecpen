@@ -26,18 +26,6 @@ export default defineConfig({
         target: 'http://localhost:5000',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, '')
-      },
-      '/scan': {
-        target: 'http://localhost:5000',
-        changeOrigin: true
-      },
-      '/scans': {
-        target: 'http://localhost:5000',
-        changeOrigin: true
-      },
-      '/auth': {
-        target: 'http://localhost:5000',
-        changeOrigin: true
       }
     }
   }

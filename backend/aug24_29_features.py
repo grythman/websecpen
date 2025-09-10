@@ -483,15 +483,8 @@ def init_ai_prioritization(app):
         """AI-driven vulnerability prioritization"""
         user_id = get_jwt_identity()
         
-        scan = Scan.query.filter(
-            Scan.id == scan_id,
-            or_(
-                Scan.user_id == user_id,
-                Scan.team_id.in_(
-                    db.session.query(TeamMember.team_id).filter(TeamMember.user_id == user_id)
-                )
-            )
-        ).first()
+        # Limit to user's own scan (Scan model doesn't include team ownership in this codebase)
+        scan = Scan.query.filter_by(id=scan_id, user_id=user_id).first()
         
         if not scan:
             return jsonify({'error': 'Scan not found'}), 404
@@ -505,7 +498,19 @@ def init_ai_prioritization(app):
                     return jsonify(json.loads(cached)), 200
             
             prioritized = []
-            alerts = scan.results.get('alerts', []) if scan.results else []
+            # Normalize alerts from results or DB vulnerabilities
+            alerts = []
+            if scan.results and isinstance(scan.results, dict):
+                alerts = scan.results.get('alerts') or scan.results.get('vulnerabilities') or []
+            if not alerts and getattr(scan, 'vulnerabilities', None):
+                for v in scan.vulnerabilities:
+                    alerts.append({
+                        'pluginid': v.id,
+                        'name': v.name,
+                        'risk': v.severity,
+                        'confidence': v.confidence or 'Medium',
+                        'desc': v.description or ''
+                    })
             
             for alert in alerts:
                 # Calculate priority score using multiple factors

@@ -50,7 +50,7 @@ const VulnTrends = () => {
     setLoading(true);
     try {
       const token = localStorage.getItem('authToken');
-      const response = await fetch(`/api/scan/trends?days=${selectedDays}`, {
+      const response = await fetch(`/scan/trends?days=${selectedDays}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -111,7 +111,7 @@ const VulnTrends = () => {
   const fetchSeverityBreakdown = async () => {
     try {
       const token = localStorage.getItem('authToken');
-      const response = await fetch('/api/scan/severity', {
+      const response = await fetch('/scan/severity', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
